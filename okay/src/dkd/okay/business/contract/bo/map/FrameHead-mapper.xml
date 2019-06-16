@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FrameHead">
+	<resultMap type="FrameHead" id="frameHeadMap">
+	<id column="id" property="id" />
+	<result column="frame_no" property="frameNo" />
+	<result column="varieties" property="varieties" />
+	<result column="tender_frame" property="tenderFrame" />
+	<result column="sign_date" property="signDate" />
+	<result column="effect_date" property="effectDate" />
+	<result column="expire_date" property="expireDate" />
+	<result column="extended_year" property="extendedYear" />
+	<result column="supplier" property="supplier" />
+	<result column="state" property="state" />
+	<result column="a_responsible_department" property="aResponsibleDepartment" />
+	<result column="b_responsible_department" property="bResponsibleDepartment" />
+	<result column="party_a_name" property="partyAName" />
+	<result column="party_a_chargeperson" property="partyAChargeperson" />
+	<result column="remark" property="remark" />
+	<result column="extended_expire_date" property="extendedExpireDate" />
+	<result column="bank_account_number" property="bank_account_number" />
+	<result column="linkman" property="linkman" />
+	<result column="tel" property="tel" />
+	<result column="supplierName" property="supplierName" />
+	<result column="opening_bank" property="opening_bank" />
+	<result column="legal_person" property="legal_person" />
+	<result column="email" property="email" />
+	<result column="address" property="address" />
+	<result column="yearMon" property="yearMon" />
+	<result column="fax" property="fax" />
+	</resultMap>
+	<!-- 根据分页查询框架协议信息 -->
+	<select id="selectByCondition" resultMap="frameHeadMap" parameterType="map">
+	   select * from(
+		select f.*,s.supplier_name supplierName,s.linkman,s.tel,ROW_NUMBER() OVER (order by effect_date desc ) r
+		from b_frame_head f  
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="frameHead.frameNo != null and frameHead.frameNo !='' "> and  f.frame_no like '%' || #{frameHead.frameNo} || '%' </if>
+			<if test="frameHead.supplierName != null and frameHead.supplierName !='' "> and s.supplier_name like '%' || #{frameHead.supplierName} || '%'</if>
+			<if test="frameHead.state != null and frameHead.state !='' "> and  f.state = #{frameHead.state} </if>
+			<if test="frameHead.signStartDate != null and frameHead.signStartDate !='' "> and  f.sign_date &gt;=to_date(#{frameHead.signStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.signEndDate != null and frameHead.signEndDate !='' "> and  f.sign_date &lt;=to_date(#{frameHead.signEndDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectStartDate != null and frameHead.effectStartDate !='' "> and  f.effect_date &gt;=to_date(#{frameHead.effectStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectEndDate != null and frameHead.effectEndDate !='' "> and  f.effect_date &lt;=to_date(#{frameHead.effectEndDate},'yyyy-mm-dd') </if>
+		</where>
+	    ) a	
+		<if test="page!= null">
+			where a.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	 </select>
+	 <!-- 查询记录数 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count (*) from (
+		select f.* ,s.supplier_name supplierName,s.linkman,s.tel,ROW_NUMBER() OVER (order by effect_date desc ) r
+		from b_frame_head f  
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="frameHead.frameNo != null and frameHead.frameNo !='' "> and  f.frame_no like '%' || #{frameHead.frameNo} || '%' </if>
+			<if test="frameHead.supplierName != null and frameHead.supplierName !='' "> and s.supplier_name like '%' || #{frameHead.supplierName} || '%'</if>
+			<if test="frameHead.state != null and frameHead.state !='' "> and  f.state = #{frameHead.state} </if>
+			<if test="frameHead.signStartDate != null and frameHead.signStartDate !='' "> and  f.sign_date &gt;=to_date(#{frameHead.signStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.signEndDate != null and frameHead.signEndDate !='' "> and  f.sign_date &lt;=to_date(#{frameHead.signEndDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectStartDate != null and frameHead.effectStartDate !='' "> and  f.effect_date &gt;=to_date(#{frameHead.effectStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectEndDate != null and frameHead.effectEndDate !='' "> and  f.effect_date &lt;=to_date(#{frameHead.effectEndDate},'yyyy-mm-dd') </if>
+		</where>
+	 ) 		
+	</select>	
+	<!-- 新增框架协议信息 -->
+	<insert id="insert" parameterType="FrameHead" >
+		insert into b_frame_head 
+		(id,frame_no,varieties,tender_frame,sign_date,effect_date,expire_date,extended_year,supplier,state,
+		a_responsible_department,b_responsible_department,party_a_name,party_a_chargeperson,remark,extended_expire_date,bank_account_number)
+		 VALUES
+		(#{id},#{frameNo},#{varieties},#{tenderFrame},#{signDate},#{effectDate},#{expireDate},#{extendedYear},#{supplier},
+		#{state},#{aResponsibleDepartment},#{bResponsibleDepartment},#{partyAName},#{partyAChargeperson},#{remark},#{extendedExpireDate},#{bank_account_number})
+	</insert>
+	<!-- 更新框架协议信息 -->
+	<update id="update" parameterType="FrameHead">
+		update b_frame_head    set 
+		frame_no = #{frameNo}, varieties = #{varieties},tender_frame=#{tenderFrame},sign_date=#{signDate},
+		effect_date=#{effectDate},expire_date=#{expireDate},extended_year=#{extendedYear},supplier=#{supplier},
+		state=#{state},a_responsible_department=#{aResponsibleDepartment},b_responsible_department=#{bResponsibleDepartment},
+		party_a_name=#{partyAName},party_a_chargeperson=#{partyAChargeperson},remark=#{remark},extended_expire_date=#{extendedExpireDate},bank_account_number=#{bank_account_number}
+		where id = #{id}
+	</update>
+	<!-- 根据ID查询框架协议信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="frameHeadMap">
+		select 	f.*,s.supplier_name supplierName,s.linkman,s.tel,s.opening_bank,s.legal_person,s.email
+		from b_frame_head  f   
+		INNER JOIN base_supplier s ON f.supplier=s.id 
+		where f.id = #{id}
+	</select>
+	<!-- 通过截取单据号的年月来查询单据 -->
+	<select id="countNo" parameterType="String" resultType="int">
+	select count(*) from b_frame_head where substr(frame_no,3,6)=#{yearMon} 
+	</select>
+	<!-- 查询全部框架协议信息 -->
+	<select id="selectAll" resultMap="frameHeadMap" >
+		select * from b_frame_head
+	</select>
+	<!-- 查询是否已经生成框架协议(生成框架协议用) -->
+	<select id="selectByTenderFrame" resultMap="frameHeadMap" >
+		select * from b_frame_head
+		where tender_frame=#{tender_frame}
+	</select>
+	<!-- 判断数据库中协议编码是否存在  -->
+	<select id="selectNoRepeat" resultType="int" parameterType="map" >
+		select count(*) from b_frame_head  a where  a.frame_no = #{frameNo} 
+		<if test="id != null and id !='' "> and a.id!=#{id}</if>
+	</select>
+	<!-- 根据分页查询公共框架协议信息 -->
+	<select id="selectPublic" resultMap="frameHeadMap" parameterType="map">
+	   select * from(
+		select f.*,s.supplier_name supplierName,s.linkman,s.tel,s.opening_bank,s.legal_person,s.email,s.address,s.fax,ROW_NUMBER() OVER (order by effect_date desc ) r
+		from b_frame_head f  
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="frameHead.frameNo != null and frameHead.frameNo !='' "> and  f.frame_no like '%' || #{frameHead.frameNo} || '%' </if>
+			<if test="frameHead.supplierName != null and frameHead.supplierName !='' "> and s.supplier_name like '%' || #{frameHead.supplierName} || '%'</if>
+			<if test="frameHead.state != null and frameHead.state !='' "> and  f.state = #{frameHead.state} </if>
+			<if test="frameHead.signStartDate != null and frameHead.signStartDate !='' "> and  f.sign_date &gt;=to_date(#{frameHead.signStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.signEndDate != null and frameHead.signEndDate !='' "> and  f.sign_date &lt;=to_date(#{frameHead.signEndDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectStartDate != null and frameHead.effectStartDate !='' "> and  f.effect_date &gt;=to_date(#{frameHead.effectStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectEndDate != null and frameHead.effectEndDate !='' "> and  f.effect_date &lt;=to_date(#{frameHead.effectEndDate},'yyyy-mm-dd') </if>
+		</where>
+	    ) a	
+		<if test="page!= null">
+			where a.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	 </select>
+	  <!-- 查询记录数 -->
+	<select id="countPublic" resultType="int" parameterType="map">
+		select count (*) from (
+		select f.* ,s.supplier_name supplierName,s.linkman,s.tel,ROW_NUMBER() OVER (order by effect_date desc ) r
+		from b_frame_head f  
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="frameHead.frameNo != null and frameHead.frameNo !='' "> and  f.frame_no like '%' || #{frameHead.frameNo} || '%' </if>
+			<if test="frameHead.supplierName != null and frameHead.supplierName !='' "> and s.supplier_name like '%' || #{frameHead.supplierName} || '%'</if>
+			<if test="frameHead.state != null and frameHead.state !='' "> and  f.state = #{frameHead.state} </if>
+			<if test="frameHead.signStartDate != null and frameHead.signStartDate !='' "> and  f.sign_date &gt;=to_date(#{frameHead.signStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.signEndDate != null and frameHead.signEndDate !='' "> and  f.sign_date &lt;=to_date(#{frameHead.signEndDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectStartDate != null and frameHead.effectStartDate !='' "> and  f.effect_date &gt;=to_date(#{frameHead.effectStartDate},'yyyy-mm-dd') </if>
+			<if test="frameHead.effectEndDate != null and frameHead.effectEndDate !='' "> and  f.effect_date &lt;=to_date(#{frameHead.effectEndDate},'yyyy-mm-dd') </if>
+		</where>
+	 ) 		
+	</select>	
+</mapper>
+    

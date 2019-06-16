@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Dictionary">
+	<resultMap type="Dictionary" id="dictionaryMap">
+		<id column="dic_id" property="dicId" />
+		<result column="parentid" property="parentId" />
+		<result column="dic_name" property="dicName" />
+		<result column="dic_english_name" property="dicEnglishName" />
+		<result column="dic_code" property="dicCode" />
+		<result column="levels" property="levels" />
+		<result column="dic_order" property="dicOrder" />
+		<result column="dic_type" property="dicType" />
+		<result column="isdel" property="isDel" />
+		<result column="parentName" property="parentName" />
+		<result column="parentCode" property="parentCode" />
+		<result column="dic_exim_code" property="dicEximCode" />
+	</resultMap>
+	<sql id="all">d.dic_id, d.parentid, d.dic_code, d.dic_name, d.levels,
+		d.dic_order, d.dic_type, d.isdel,d.dic_exim_code,dic_english_name dicEnglishName
+	</sql>
+	
+	<select id="selectById" resultMap="dictionaryMap" parameterType="string">
+		SELECT <include refid="all" />, 
+		(select ss.dic_name from sys_dictionary ss where ss.dic_id = #{dicId}) as parentName 
+		,(select dd.dic_code from sys_dictionary dd where dd.dic_id = #{dicId})  as parentCode 
+		FROM sys_dictionary d WHERE d.isDel = 0 AND d.parentid=#{dicId}
+		ORDER BY dic_order
+	</select>
+	
+	<select id="selectAll" resultMap="dictionaryMap" parameterType="int">
+		SELECT
+		<include refid="all" />
+		FROM sys_dictionary d WHERE d.isDel = 0 AND (d.dic_type = #{dic_type} or d.dic_type = 2 ) 
+		ORDER BY dic_order
+	</select>
+
+	<select id="selectDictionaryByParentId" parameterType="map"
+		resultMap="dictionaryMap">
+		SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER (ORDER BY d.dic_id) AS r
+		FROM sys_dictionary d WHERE d.parentId = #{dicId} AND d.isDel = 0
+		AND d.dic_type=#{dic_type}
+		)
+		s
+		<if test="page!= null">
+			WHERE s.r
+			BETWEEN #{page.startPos} AND
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+		ORDER BY dic_ORDER
+	</select>
+	<select id="query" parameterType="map" resultMap="dictionaryMap">
+		SELECT * FROM (SELECT d.*,ROW_NUMBER() OVER (ORDER BY d.dic_id) AS r
+		FROM sys_dictionary d WHERE d.parentId = #{dicId} AND d.isDel = 0
+		AND d.dic_type=#{dic_type} 
+		<if test="dicName != null and dicName != '' ">
+			AND d.dic_name like '%' || #{dicName} || '%'
+		</if>
+		) s
+		<if test="page!= null">
+			WHERE s.r
+			BETWEEN #{page.startPos} AND
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+		ORDER BY dic_order
+	</select>
+	<select id="selectByPk" parameterType="String" resultMap="dictionaryMap">
+		SELECT
+		<include refid="all" />, 
+		(select ss.dic_name from sys_dictionary ss where ss.dic_id = d.parentid) as parentName 
+		,(select dd.dic_code from sys_dictionary dd where dd.dic_id = d.parentid)  as parentCode 
+		FROM sys_dictionary  d WHERE d.isDel = 0 AND d.dic_id = #{dicId} 
+	</select>
+
+	<insert id="insert" parameterType="Dictionary" useGeneratedKeys="true">
+		INSERT INTO sys_dictionary (dic_id,
+		dic_name,dic_code,parentid,levels,dic_order,dic_type,dic_english_name
+		) VALUES
+		(#{dicId},
+		#{dicName},#{dicCode},#{parentId},#{levels},#{dicOrder},#{dicType},#{dicEnglishName}
+		)
+	</insert>
+
+	<update id="update" parameterType="Dictionary" >
+		UPDATE sys_dictionary SET
+		dic_name = #{dicName}, 
+		dic_english_name=#{dicEnglishName},
+		dic_order = #{dicOrder}
+		WHERE dic_id = #{dicId}
+	</update>
+	<update id="delete" parameterType="String" flushCache="true">
+		UPDATE sys_dictionary SET
+		isdel=1
+		WHERE dic_id = #{dicId} OR parentid = #{dicId}
+	</update>
+
+
+	<select id="checkDic" parameterType="Dictionary" resultType="int">
+		SELECT count(1) FROM sys_dictionary d WHERE (d.dic_code=#{dicCode} or d.dic_name=#{dicName})
+		AND d.parentid=#{parentId} AND d.isDel = 0 
+		<if test="dicId != null and dicId != '' ">
+			and d.dic_id != #{dicId} 
+		</if>
+	</select>
+	<select id="selectMaxOrder" parameterType="string" resultType="int">
+		SELECT max(dic_order) FROM sys_dictionary d WHERE d.parentid=#{parentId} AND d.isDel = 0
+	</select>
+	<select id="selectByCode" parameterType="map" resultMap="dictionaryMap">
+		SELECT <include refid="all" /> FROM sys_dictionary  d 
+		WHERE d.isDel = 0 AND d.dic_code = #{dicCode} 
+		<if test="parentid != null and parentid != '' ">
+		and d.parentid = #{parentid} 
+		</if>
+	</select>
+	<select id="queryByCode" parameterType="string" resultMap="dictionaryMap">
+		SELECT <include refid="all" /> FROM sys_dictionary  d 
+		WHERE d.isDel = 0 AND d.dic_code = #{dicCode} 
+	</select>
+	
+	<select id="selectByEximCode" parameterType="map" resultMap="dictionaryMap">
+		SELECT <include refid="all" /> FROM sys_dictionary  d 
+		WHERE d.isDel = 0 AND d.dic_exim_code = #{dicEximCode} 
+		and d.parentid = #{parentid} 
+	</select>
+	<select id="getCodeByName" parameterType="string" resultType="string">
+		SELECT top 1 dic_code FROM sys_dictionary  d 
+		WHERE d.isDel = 0 AND d.dic_name = #{name} and parentid=
+		(select dic_id from sys_dictionary where dic_code='unit')
+	</select>
+	<select id="selectCodeByEximCode" parameterType="string" resultType="string">
+		SELECT dic_code FROM sys_dictionary  d 
+		WHERE d.isDel = 0 AND d.dic_exim_code = #{dicEximCode} 
+	</select>
+	<select id="selectDictionaryByEximCode" parameterType="string" resultMap="dictionaryMap">
+		SELECT top 1 * FROM sys_dictionary  d 
+		WHERE d.isDel = 0 AND d.dic_exim_code = #{dicEximCode} 
+	</select>
+	<!-- 周渤涛添加用于校验物料类别中的计量单位和辅助计量单位，判断数据库中计量单位是否存在  -->
+	<select id="selectDictionaryCountByList" resultType="int" parameterType="Map" >
+		select count(*) from sys_dictionary  d where  d.isdel = 0  and d.parentid = #{parentid} and d.dic_name  in 
+		<foreach collection="nameList" index="index" item="item" open="("    separator="," close=")">
+   			#{item}
+  		</foreach>
+	</select>
+	<select id="selectZhuanye" resultMap="dictionaryMap" parameterType="string">
+		SELECT A.dic_name AS parentid,B.dic_code,B.dic_name FROM sys_dictionary A, sys_dictionary B 
+		WHERE A.DIC_ID=B.parentid AND A.parentid = #{parentid} AND A.isdel=0 AND B.ISDEL=0 
+		ORDER BY B.parentid,B.dic_code</select>
+	<select id="selectZhuanyeEn" resultMap="dictionaryMap" parameterType="string">
+		SELECT A.dic_english_name AS parentid,B.dic_code,B.dic_english_name as dicName FROM sys_dictionary A, sys_dictionary B 
+		WHERE A.DIC_ID=B.parentid AND A.parentid = #{parentid} AND A.isdel=0 AND B.ISDEL=0 
+		ORDER BY B.parentid,B.dic_code
+	</select>
+	<select id="selectDictionaryByParentCode" resultMap="dictionaryMap" parameterType="string">
+		SELECT  dic_code ,dic_name FROM sys_dictionary 
+		WHERE parentid = (select dic_id from sys_dictionary where parentid='0' and dic_code=#{parentCode}) AND ISDEL=0 
+		ORDER BY dic_order
+	</select>
+	<!-- 周渤涛添加查询币种  -->
+	<select id="selectBizhong" resultMap="dictionaryMap" parameterType="string">
+		SELECT  B.dic_code ,B.dic_name,B.dic_english_name FROM sys_dictionary B 
+		WHERE B.parentid = #{parentid} AND B.ISDEL=0 
+		ORDER BY b.dic_order
+	</select>
+	<!-- 根据字典的中文名称查找英文名称 -->
+	<select id="selectByChinese" parameterType="map" resultType="String">
+	    select b.dic_english_name as dicEnglishName from sys_dictionary b where b.dic_name=#{name} and b.parentid=#{parentid}
+	</select>
+	<!-- 根据字典的英文名称查找中文名称 -->
+	<select id="selectByEnglish" parameterType="map" resultType="String">
+	    select b.dic_name as dicName from sys_dictionary b where b.dic_english_name=#{name} and b.parentid=#{parentid}
+	</select>
+	<!-- 根据专业大类的parentid和name获取专业大类的ID以供搜索专业小类-->
+	<select id="selectIDByParentIdAndName" parameterType="map" resultType="String">
+	    select b.dic_id from sys_dictionary b where b.dic_name=#{name} and b.parentid=#{parentid}
+	</select>
+	<!-- 根据字典的中文名称和code值查找英文字典名称 -->
+	<select id="selectEnglishNameByNameAndCode" parameterType="map" resultType="String">
+	    select b.dic_english_name from sys_dictionary b 
+	    <where>
+	    <if test="name!=null and name!=''"> and  b.dic_name=#{name} </if>
+	    <if test="code!=null and code!=''"> and  b.dic_code=#{code} </if>
+	    </where>
+	</select>
+	<!-- 根据dicCode查询所有子数据字典 -->
+	<select id="selectByDicCode" resultMap="dictionaryMap" parameterType="string">
+		SELECT <include refid="all" />, 
+		view1.dic_id,view1.dic_name as parentName,view1.dic_code as parentCode
+		FROM (SELECT dd.dic_id ,dd.dic_name ,dd.dic_code FROM	sys_dictionary dd
+		WHERE dd.dic_code = #{dicCode})  view1,sys_dictionary  d
+		WHERE d.isDel = 0 AND d.parentid = view1.dic_id ORDER BY dic_order
+	</select>
+</mapper>

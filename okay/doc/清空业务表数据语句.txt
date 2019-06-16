@@ -1,0 +1,14 @@
+--清除日志
+delete sys_log
+--清除代办任务
+delete sys_work_process_record
+--储位
+delete T_LOCATION
+--物料编码
+delete T_MATERIALS
+--物料类型
+delete T_MATERIALS_TYPE
+--库区
+delete T_REGION
+--仓库
+delete T_WAREHOUSE

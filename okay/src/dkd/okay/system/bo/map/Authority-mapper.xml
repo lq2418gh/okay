@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Authority">
+	<resultMap type="Authority" id="authorityMap">
+		<id column="auth_id" property="authId"/>
+		<result column="auth_code" property="authCode"/>
+		<result column="auth_name" property="authName"/>
+		<result column="parentId" property="parentId"/>
+		<result column="row_Order" property="rowOrder"/>
+	</resultMap>
+	<!-- 常量 -->
+	<sql id="all">a.auth_id,a.auth_code,a.auth_name,a.parentId,a.row_order</sql>
+	<!-- 查询全部的权限 -->
+	<select id="selectAll" resultMap="authorityMap" >
+		select <include refid="all"/> from sys_authority a order by row_order
+	</select>
+	
+	<select id="queryByPageCount" resultType="int" parameterType="string">
+		select count(*) from sys_authority 
+		<where>
+			<if test="parentId!=null and parentId!=''">parentid=#{parentId}</if>
+		</where> 
+	</select>
+	
+	<select id="selectByCondition" resultMap="authorityMap" parameterType="string">
+		select * from (select <include refid="all"/>,ROW_NUMBER() OVER(order by a.auth_id)  r
+		 from sys_authority  a 
+		<where>
+			<if test="parentId!=null and parentId!=''">parentid=#{parentId}</if>
+		</where>
+		) auth where auth.r between #{page.startPos} and ((#{page.pageSize}+#{page.startPos})-1)
+		 ORDER BY (cast(row_order as int))   
+	</select>
+	<select id="selectByPk" resultMap="authorityMap" parameterType="string">
+		select <include refid="all"/> from sys_authority  a  
+		<where>
+			auth_id=#{authId}
+		</where>
+	</select>
+	<!-- 为了生成ID获取最大值 -->
+	<select id="queryMaxValue" resultType="string">
+		select max(cast(auth_id as int)) from sys_authority
+	</select>
+	<insert id="insert" parameterType="dkd.okay.system.bo.Authority">
+		insert into sys_authority (auth_id,auth_code,auth_name,parentid,row_order)
+		values(#{authId},#{authCode},#{authName},#{parentId},#{rowOrder})
+	</insert>
+	<update id="update" parameterType="dkd.okay.system.bo.Authority">
+		update sys_authority 
+		<set>
+			<if test="authCode!=null and authCode!=''">auth_code=#{authCode},</if>
+			<if test="authName!=null and authName!=''">auth_name=#{authName},</if>
+			<if test="rowOrder!=null and rowOrder!=''">row_order=#{rowOrder},</if>
+			auth_id=#{authId}
+		</set>
+		<where>
+			auth_id=#{authId}
+		</where>
+	</update>
+	
+	<delete id="delete" parameterType="string">
+		delete from sys_authority where auth_id=#{authId}
+	 </delete>
+	 <select id="selectByCode" resultType="int" parameterType="dkd.okay.system.bo.Authority">
+		select count(*) from sys_authority where auth_code=#{authCode}
+		<if test="authId != null and authId != ''"> and auth_id != #{authId}</if>
+	</select>
+</mapper>

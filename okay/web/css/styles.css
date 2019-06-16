@@ -1,0 +1,234 @@
+body {
+	background-color: #ffffff; 
+}
+body p {
+	font-size: 14px; 
+}
+a{
+	font-size: 12px;
+}
+a:ACTIVE,a:VISITED,a:LINK{
+	text-decoration: none;
+}
+.label {
+	font-size: 12px;
+}
+.table{
+	margin-bottom: 0px;
+}
+.form-control {
+	width: auto;
+}
+.panel-heading {
+	height: 28px;
+	padding: 3px;
+}
+.input-group{
+	width: 180px;
+	float: left;
+}
+.table>thead>tr>th, 
+.table>tbody>tr>th, 
+.table>tfoot>tr>th, 
+.table>thead>tr>td, 
+.table>tbody>tr>td, 
+.table>tfoot>tr>td {
+	text-align: left;
+	vertical-align: middle;
+	font-size: 12px;
+	white-space:nowrap;
+	padding: 3px;
+}
+#queryTable {
+	margin-bottom: 0px;
+}
+#queryTable>thead>tr>th, 
+#queryTable>tbody>tr>th, 
+#queryTable>tfoot>tr>th, 
+#queryTable>thead>tr>td, 
+#queryTable>tbody>tr>td, 
+#queryTable>tfoot>tr>td {
+	text-align: left;
+	vertical-align: middle;
+	font-size: 12px;
+	white-space:nowrap;
+	padding: 3px;
+}
+#queryTable>thead>tr>td, 
+#queryTable>tbody>tr>td, 
+#queryTable>tfoot>tr>td {
+	text-align: left;
+	padding-left: 25px;
+}
+#queryTable>tbody>tr>td>input.form-control ,
+#queryTable>tbody>tr>td>select.form-control {
+	width: 230px;
+}
+#queryTable>tbody>tr>td>input.w80{
+	width:80px;
+}
+#queryTable>tbody>tr>td>input.w100{
+	width:100px;
+}
+#queryTable>tbody>tr>td>input.input-sm ,
+#queryTable>tbody>tr>td>select.input-sm {
+	height: 27px;
+	padding: 0px 10px;
+	padding: 2px\0 10px\0;/*for ie8*/
+}
+/*for FF*/
+@-moz-document url-prefix(){
+	#queryTable>tbody>tr>td>input.input-sm ,
+	#queryTable>tbody>tr>td>select.input-sm {
+		height: 27px;
+		padding: 3px 10px;
+	}
+}
+#queryTable>tbody>tr>td>div>input.input-sm ,
+#queryTable>tbody>tr>td>div>select.input-sm {
+	height: 27px;
+	padding: 0px 10px;
+	padding: 2px\0 10px\0;/*for ie8*/
+}
+#queryTable>tbody>tr>td>div>span>button.btn-sm {
+	line-height: 1.27;
+	line-height: 1.25\9; /*for ie*/
+}
+#queryTable>tbody>tr>td>div>span>button>span.glyphicon {
+	line-height: 1.27;
+	line-height: 0.8\9; /*for ie*/
+}
+#queryTable #tools{
+	text-align: center;
+	padding-left: 0px;
+}
+.datetimepicker-days table.table-condensed{
+	font-size: 12px;
+}
+.icon {
+	border-right: 1px solid #cdcdcd;
+	padding: 13px 20px 7px 18px;
+	margin-right: 20px;
+}
+.panel-group .panel-heading+.panel-collapse .panel-body {
+	border-top: 0px solid #ddd;
+	overflow:auto;
+}
+.panel-title {
+	margin-top: 5px;
+}
+.ui-layout-toggler {  
+	border: 1px solid #369;   
+	background-color: rgb(51, 102, 153);  
+	opacity: .60;  
+	filter:  alpha(opacity=60);  
+}  
+#header {
+
+}
+#header a {
+	font-size:12px;
+	color: #fff;
+}
+#header ul.nav.navbar-nav.navbar-right{
+	margin-right:20px;
+}
+#header li span.label.label-danger{
+	position: relative;
+	top: -10px;
+	right: 10px;
+}
+#header li img.img-rounded{
+	margin-top:3px;
+	width: 45px;
+	height: 45px;
+}
+.sidebar {
+	border-top: 1px solid #EEE;
+}
+.sidebar ul {
+	padding: 0;
+	margin: 0;
+}
+.sidebar ul li {
+	list-style-type: none;
+	width: 160px\0;/*for ie8*/
+}
+.sidebar ul li.in {
+	background-color: #bababa\0;/*for ie8*/
+}
+.sidebar ul li a:hover {
+	background-color: #EEE;
+	text-decoration: none;
+}
+.sidebar ul li a {
+	display: block;
+	padding: 10px;
+	border-bottom: 1px solid #EEE;
+	text-transform: uppercase;
+}
+.sidebar ul li ul {
+	background-color: #bababa;
+}
+.sidebar ul li ul li{
+	height: 35px\0;/*for ie8*/
+}
+.sidebar ul li ul li a{
+	padding-left: 20px;
+}
+#context{
+	padding-left:15px\0; /*for ie8*/
+	padding-left:20px;
+}
+#context  .container{
+	padding: 0px;
+	margin: 0px;
+	width: 100%;
+	margin-left:0px;
+}
+#context  .container .span12{
+	width: 96%;
+}
+#context  .container .panel-body{
+	padding: 0px;
+}
+.nav-tabs {
+	border-bottom: 1px solid #418bca;
+}
+.nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus{
+	color:#FFF;
+	border: 1px solid #418bca;
+	background-color: #418bca;
+}
+
+#pageTools>thead>tr>th, 
+#pageTools>tbody>tr>th, 
+#pageTools>tfoot>tr>th, 
+#pageTools>thead>tr>td, 
+#pageTools>tbody>tr>td, 
+#pageTools>tfoot>tr>td {
+	text-align: center;
+}
+#formValidate label.error { 
+	margin-left:5px;
+	color:Red; 
+	font-size:10px;
+}
+.input-sm{
+	float: left;
+}
+.w60{
+	width:60px;
+}
+.w80{
+	width:80px;
+}
+.w100{
+	width:100px;
+}
+.panel-body .table tr{
+	height:30px;
+}
+.form_datetime[readonly]{
+	cursor:pointer;
+}

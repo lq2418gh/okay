@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Stock">
+	<resultMap type="Stock" id="stockMap">
+		<id column="id" property="id" />
+		<result column="material" property="material"/>
+		<result column="order_detail" property="order_detail"/>
+		<result column="user_id" property="user_id"/>
+		<result column="frame_id" property="frame_id"/>
+		<result column="contract_id" property="contract_id"/>
+		<result column="order_frame" property="order_frame"/>
+		<result column="stroageDetail" property="stroageDetail"/>
+		<result column="stroageHead" property="stroageHead"/>
+		<result column="stockNum" property="stockNum"/>
+		
+		<result column="storage_no" property="storage_no" />
+		<result column="entry_date" property="entry_date" />
+		<result column="supplier_name" property="supplier_name" />
+		<result column="user_name" property="user_name" />
+		<result column="order_no" property="order_no" />
+		<result column="contract_no" property="contract_no" />
+		<result column="frame_no" property="frame_no" />
+		<result column="warehouse_name" property="warehouse_name" />
+		<result column="packing" property="packing"/>
+		<result column="main_price" property="main_price"/>
+		<result column="main_quantity" property="main_quantity"/>
+		<result column="secondary_price" property="secondary_price"/>
+		<result column="secondary_quantity" property="secondary_quantity"/>
+		<result column="name" property="name"/>
+		<result column="conversion" property="conversion"/>
+		<result column="unit" property="unit"/>
+		<result column="unit_help" property="unit_help"/>
+		<result column="spec" property="spec"/>
+	</resultMap>
+	
+	
+	<insert id="save" parameterType="Stock">
+		insert into b_stock
+		(id,warehouse,user_id,frame_id,contract_id,
+		material,order_frame,order_detail,stroageDetail,stroageHead,stockNum)
+		values
+		(#{id},#{warehouse},#{user_id},#{frame_id},#{contract_id},
+		#{material},#{order_frame},#{order_detail},#{stroageDetail},#{stroageHead},#{stockNum}) 
+	</insert>	
+
+	<select id="selectByCondition" resultMap="stockMap" parameterType="map">
+	select * from (
+	    select t.*, ROW_NUMBER() OVER (order by sh.storage_no ) r, 
+	    sh.storage_no,sh.entry_date,
+	    ui.realname user_name,
+	    w.warehouse_name,
+	    oh.order_no,
+	    s.supplier_name,
+	    fh.frame_no,
+	    pch.contract_no,
+	    sd.main_price,sd.main_quantity,sd.secondary_quantity,sd.secondary_price,sd.packing,sd.remark,
+	    y.dic_name unit,
+	    yy.dic_name unit_help, 
+	    m.conversion, m.spec,m.name,
+	    od.already_secondary_quantity in_storage,
+	    od.already_main_quantity main_in_storage
+	    
+	    from b_stock t
+	    left join b_storage_head sh on sh.id=t.stroagehead
+	    left join b_storage_detail sd on sd.id=t.stroagedetail
+	    left join sys_user u on u.user_id=t.user_id
+	    left join sys_userinfo ui on ui.user_id=u.user_id
+	    left join base_warehouse w on w.warehouse_id=t.warehouse
+	    left join b_order_head oh on oh.id=t.order_frame
+	    left join b_order_detail od on od.id=t.order_detail
+	    left join base_supplier s on s.id=oh.supplier_id
+	    left join b_purchase_contract_head pch on pch.id=t.contract_id
+	    left join b_frame_head fh on fh.id=t.frame_id
+	    left join base_material m on  m.id = t.material
+	    left join sys_dictionary y on  m.unit = y.dic_code
+	    left join sys_dictionary yy on  m.unit_help = yy.dic_code
+	    <where>
+			<if test="stock.storage_no != null and stock.storage_no != ''">and sh.storage_no like '%' || #{stock.storage_no} || '%'</if>
+			<if test="stock.name != null and stock.name != ''">and m.name like '%' || #{stock.name} || '%'</if>
+			<if test="stock.warehouse_name != null and stock.warehouse_name != ''">and w.warehouse_name like '%' || #{stock.warehouse_name} || '%'</if>
+			<if test="stock.order_no != null and stock.order_no != ''">and oh.order_no like '%' || #{stock.order_no} || '%'</if>
+			<if test="stock.user_name != null and stock.user_name != ''">and ui.realname like '%' || #{stock.user_name} || '%'</if>
+			<if test="stock.supplier_name != null and stock.supplier_name != ''">and s.supplier_name like '%' || #{stock.supplier_name} || '%'</if>
+			<if test="stock.contract_no != null and stock.contract_no != ''">and pch.contract_no like '%' || #{stock.contract_no} || '%'</if>
+			<if test="stock.frame_no != null and stock.frame_no != ''">and fh.frame_no like '%' || #{stock.frame_no} || '%'</if>
+			<if test="stock.entry_date_begin != null and stock.entry_date_begin != ''"> and sh.entry_date &gt;=to_date(#{stock.entry_date_begin},'yyyy-mm-dd')</if>
+			<if test="stock.entry_date_end != null and stock.entry_date_end != ''"> and sh.entry_date &lt;=to_date(#{stock.entry_date_end},'yyyy-mm-dd') </if>
+		</where>
+	    )s
+		<if test="page!= null">
+			where s.r
+			between (#{page.totalCount}-#{page.pageNow}*#{page.pageSize}+1)
+			and (#{page.totalCount}-(#{page.pageNow}-1)*#{page.pageSize})
+		</if>
+			
+	</select>
+	
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*)
+	    from b_stock t
+	    left join b_storage_head sh on sh.id=t.stroagehead
+	    left join b_storage_detail sd on sd.id=t.stroagedetail
+	    left join sys_user u on u.user_id=t.user_id
+	    left join sys_userinfo ui on ui.user_id=u.user_id
+	    left join base_warehouse w on w.warehouse_id=t.warehouse
+	    left join b_order_head oh on oh.id=t.order_frame
+	    left join b_order_detail od on od.id=t.order_detail
+	    left join base_supplier s on s.id=oh.supplier_id
+	    left join b_purchase_contract_head pch on pch.id=t.contract_id
+	    left join b_frame_head fh on fh.id=t.frame_id
+	    left join base_material m on  m.id = t.material
+	    left join sys_dictionary y on  m.unit = y.dic_code
+	    left join sys_dictionary yy on  m.unit_help = yy.dic_code
+	    <where>
+			<if test="stock.storage_no != null and stock.storage_no != ''">and sh.storage_no like '%' || #{stock.storage_no} || '%'</if>
+			<if test="stock.name != null and stock.name != ''">and m.name like '%' || #{stock.name} || '%'</if>
+			<if test="stock.warehouse_name != null and stock.warehouse_name != ''">and w.warehouse_name like '%' || #{stock.warehouse_name} || '%'</if>
+			<if test="stock.order_no != null and stock.order_no != ''">and oh.order_no like '%' || #{stock.order_no} || '%'</if>
+			<if test="stock.user_name != null and stock.user_name != ''">and ui.realname like '%' || #{stock.user_name} || '%'</if>
+			<if test="stock.supplier_name != null and stock.supplier_name != ''">and s.supplier_name like '%' || #{stock.supplier_name} || '%'</if>
+			<if test="stock.contract_no != null and stock.contract_no != ''">and pch.contract_no like '%' || #{stock.contract_no} || '%'</if>
+			<if test="stock.frame_no != null and stock.frame_no != ''">and fh.frame_no like '%' || #{stock.frame_no} || '%'</if>
+			<if test="stock.entry_date_begin != null and stock.entry_date_begin != ''"> and sh.entry_date &gt;=to_date(#{stock.entry_date_begin},'yyyy-mm-dd')</if>
+			<if test="stock.entry_date_end != null and stock.entry_date_end != ''"> and sh.entry_date &lt;=to_date(#{stock.entry_date_end},'yyyy-mm-dd') </if>
+		</where>
+	</select>
+	<!-- 根据订单明细查找所有的库存记录 -->
+	<select id="selectByDetail" resultMap="stockMap" parameterType="String">
+	select b.* from b_stock b 
+	inner join  b_storage_head s on s.id=b.stroagehead 
+	where order_detail=#{detail} and b.warehouse=#{warehouse}
+	order by s.entry_date
+	</select>
+	<!-- 扣减库存数量 -->
+	<update id="updateStockNum" parameterType="map">
+		update b_stock set 
+		stockNum = #{stockNum}
+		where id=#{id} 
+	</update>
+	<!-- 根据物资id查询库存数量 -->
+	<select id="selectStockByMaterial" parameterType="String" resultType="String">
+	select m.stock from 
+	(select material,sum(stocknum) stock from 
+		b_stock  where material=#{material} 
+		group by material) m
+	</select>
+	<!-- 根据物资id查询库存数量 -->
+	<select id="selectStockByMaterialAndWarehouse" parameterType="String" resultType="String">
+	select m.stock from 
+	(select material,warehouse,sum(stocknum) stock from 
+		b_stock  where material=#{material} and warehouse=#{warehouse}
+		group by material,warehouse) m
+	</select>
+	<!-- 根据订单明细和仓库查询是否存在相关信息 -->
+	<select id="selectStockByWarehouseAndDetail" parameterType="map" resultMap="stockMap">
+	select * from b_stock  where WAREHOUSE=#{warehouse} and ORDER_DETAIL=#{order_detail}
+	</select>
+</mapper>

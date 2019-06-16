@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="StorageDetail">
+
+	<resultMap type="StorageDetail" id="storageDetailMap">
+		<id column="id" property="id" />
+			<result column="no" property="no"/>
+			<result column="storge_head" property="storge_head"/>
+			<result column="order_detail" property="order_detail"/>
+			<result column="material" property="material"/>
+			<result column="packing" property="packing"/>
+			<result column="main_price" property="main_price"/>
+			<result column="main_quantity" property="main_quantity"/>
+			<result column="secondary_price" property="secondary_price"/>
+			<result column="secondary_quantity" property="secondary_quantity"/>
+			<result column="remark" property="remark"/>
+			<result column="residue" property="residue"/>
+			<result column="in_storage" property="in_storage"/>
+			<result column="main_residue" property="main_residue"/>
+			<result column="main_in_storage" property="main_in_storage"/>
+			<result column="name" property="name"/>
+			<result column="conversion" property="conversion"/>
+			<result column="unit" property="unit"/>
+			<result column="unit_help" property="unit_help"/>
+			<result column="spec" property="spec"/>
+			<result column="budget_plan_detail" property="budget_plan_detail"/>
+	</resultMap>
+	
+	<!-- 根据主表id删除 -->
+	<delete id="deleteDetalsByHeadId" parameterType="String">
+	 	delete from B_STORAGE_DETAIL where storge_head = #{storge_head}
+	</delete>
+	
+	<!-- 批量插入数据 -->
+	<insert id="bathInsert" parameterType="java.util.List" useGeneratedKeys="false">
+		insert into b_storage_detail
+        	(id,no,storge_head,order_detail,material,packing,main_price,main_quantity,secondary_price,secondary_quantity,remark)
+        	select a.* from (
+        <foreach collection="list" item="item" index="index" separator="union all">  
+           select 
+            #{item.id} id,
+            #{item.no} no,
+            #{item.storge_head} storge_head,
+            #{item.order_detail} order_detail,
+            #{item.material} material,
+            #{item.packing} packing,
+            #{item.main_price} main_price,
+            #{item.main_quantity} main_quantity,
+            #{item.secondary_price,jdbcType=NUMERIC} secondary_price,
+            #{item.secondary_quantity,jdbcType=NUMERIC} secondary_quantity,
+            #{item.remark} remark
+           from dual
+        </foreach>  
+        ) a
+	</insert>
+	<select id="selectById" parameterType="String"  resultMap="storageDetailMap">
+		select 	b.*
+		from b_storage_detail b    
+		where b.storge_head = #{storge_head}
+	</select>	
+</mapper>

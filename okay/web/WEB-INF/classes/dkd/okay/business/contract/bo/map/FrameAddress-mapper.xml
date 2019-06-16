@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FrameAddress">
+	<resultMap type="FrameAddress" id="frameAddressMap">
+	<id column="id" property="id" />
+	<result column="frame_head" property="frameHead" />
+	<result column="delivery_address" property="deliveryAddress" />
+	</resultMap>
+	
+	<!-- 删除收货地址明细信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_frame_address  
+		where frame_head = #{frameHead}
+	</delete>
+	<!-- 新增收货地址明细信息 -->
+	<insert id="insert" parameterType="FrameAddress" >
+		insert into b_frame_address
+		(id,frame_head,delivery_address)
+		 VALUES
+		(#{id},#{frameHead},#{deliveryAddress})
+	</insert>
+	<!-- 根据ID查询收货地址明细信息 -->
+	<select id="selectById" resultMap="frameAddressMap">
+		select 	b.*
+		from b_frame_address b    
+		where b.frame_head = #{frameHead}
+	</select>
+</mapper>

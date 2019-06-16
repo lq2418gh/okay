@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Invoice">
+	<resultMap type="Invoice" id="invoiceMap">
+		<id column="id" property="id" />
+		<result column="invoice_no" property="invoiceNo" />
+		<result column="billing_date" property="billingDate" />
+		<result column="supplier" property="supplier" />
+		<result column="is_already" property="is_already" />
+		 <result column="total" property="total" />
+		 <result column="bank_account_number" property="bank_account_number" />
+		<result column="SUPPLIER_NAME" property="supplier_name"/>
+		<result column="ADDRESS" property="address"/>
+		<result column="TEL" property="tel"/>
+		<result column="OPENING_BANK" property="opening_bank"/>
+	</resultMap>
+	<!-- 根据分页查询发票信息 -->
+	<select id="selectByCondition" resultMap="invoiceMap" parameterType="map">
+	   select * from(
+		select f.*,s.supplier_name,ROW_NUMBER() OVER (order by invoice_no desc ) r
+		from b_invoice f
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="invoice.invoiceNo != null and invoice.invoiceNo !='' "> and  f.invoice_no like '%' || #{invoice.invoiceNo} || '%' </if>
+			<if test="invoice.billingStartDate != null and invoice.billingStartDate !='' "> and  f.billing_date &gt;=to_date(#{invoice.billingStartDate},'yyyy-mm-dd') </if>
+			<if test="invoice.billingEndDate != null and invoice.billingEndDate !='' "> and  f.billing_date &lt;=to_date(#{invoice.billingEndDate},'yyyy-mm-dd') </if>
+		</where>
+	    ) a	
+		<if test="page!= null">
+			where a.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	 </select>
+	 <!-- 查询记录数 -->
+	<select id="countParam" resultType="int" parameterType="map">
+	   select count (*) from(
+		select f.*,s.supplier_name,ROW_NUMBER() OVER (order by invoice_no desc ) r
+		from b_invoice f
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="invoice.invoiceNo != null and invoice.invoiceNo !='' "> and  f.invoice_no like '%' || #{invoice.invoiceNo} || '%' </if>
+			<if test="invoice.billingStartDate != null and invoice.billingStartDate !='' "> and  f.billing_date &gt;=to_date(#{invoice.billingStartDate},'yyyy-mm-dd') </if>
+			<if test="invoice.billingEndDate != null and invoice.billingEndDate !='' "> and  f.billing_date &lt;=to_date(#{invoice.billingEndDate},'yyyy-mm-dd') </if>
+		</where>
+	    ) 
+	 </select>
+	 <!-- 新增发票信息 -->
+	<insert id="insert" parameterType="Invoice" >
+		insert into b_invoice 
+		(id,invoice_no,billing_date,supplier,is_already,total,bank_account_number)
+		 VALUES
+		(#{id},#{invoiceNo},#{billingDate},#{supplier},#{is_already},#{total},#{bank_account_number})
+	</insert>
+	<!-- 更新发票信息 -->
+	<update id="update" parameterType="Invoice">
+		update b_invoice    set 
+		invoice_no = #{invoiceNo}, billing_date = #{billingDate},supplier=#{supplier},
+		is_already=#{is_already},total=#{total},bank_account_number=#{bank_account_number}
+		where id = #{id}
+	</update>
+		<!-- 根据ID查询发票信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="invoiceMap">
+		select 	f.*,s.supplier_name,s.tel,s.opening_bank,s.address
+		from b_invoice  f   
+		INNER JOIN base_supplier s ON f.supplier=s.id 
+		where f.id = #{id}
+	</select>
+	<!-- 删除发票信息 -->
+	<delete id="delete" parameterType="String">
+		delete from  b_invoice 
+		where id = #{id}
+	</delete>
+	<!-- 判断数据库中发票号是否存在  -->
+	<select id="selectNoRepeat" resultType="int" parameterType="map" >
+		select count(*) from b_invoice  a where  a.invoice_no = #{invoiceNo} 
+		<if test="id != null and id !='' "> and a.id!=#{id}</if>
+	</select>
+	<!-- 根据分页查询公共发票信息 -->
+	<select id="selectPublic" resultMap="invoiceMap" parameterType="map">
+	  select * from(
+		select f.*,s.supplier_name,ROW_NUMBER() OVER (order by invoice_no desc ) r
+		from b_invoice f
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+		    f.is_already=0
+			<if test="invoice.invoiceNo != null and invoice.invoiceNo !='' "> and  f.invoice_no like '%' || #{invoice.invoiceNo} || '%' </if>
+			<if test="invoice.billingStartDate != null and invoice.billingStartDate !='' "> and  f.billing_date &gt;=to_date(#{invoice.billingStartDate},'yyyy-mm-dd') </if>
+			<if test="invoice.billingEndDate != null and invoice.billingEndDate !='' "> and  f.billing_date &lt;=to_date(#{invoice.billingEndDate},'yyyy-mm-dd') </if>
+			<if test="ids != null and ids.length>0">
+			or f.id in
+				<foreach collection="ids" index="index" item="ids" open="("  separator="," close=")">
+					#{ids}
+				</foreach>
+			</if>
+		</where>
+	    ) a	
+		<if test="page!= null">
+			where a.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	 </select>
+	  <!-- 查询公共记录数 -->
+	<select id="countPublic" resultType="int" parameterType="map">
+	   select count (*) from(
+		select f.*,s.supplier_name,ROW_NUMBER() OVER (order by invoice_no desc ) r
+		from b_invoice f
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+		    f.is_already=0
+			<if test="invoice.invoiceNo != null and invoice.invoiceNo !='' "> and  f.invoice_no like '%' || #{invoice.invoiceNo} || '%' </if>
+			<if test="invoice.billingStartDate != null and invoice.billingStartDate !='' "> and  f.billing_date &gt;=to_date(#{invoice.billingStartDate},'yyyy-mm-dd') </if>
+			<if test="invoice.billingEndDate != null and invoice.billingEndDate !='' "> and  f.billing_date &lt;=to_date(#{invoice.billingEndDate},'yyyy-mm-dd') </if>
+			<if test="ids != null and ids.length>0">
+			or f.id in
+				<foreach collection="ids" index="index" item="ids" open="("  separator="," close=")">
+					#{ids}
+				</foreach>
+			</if>
+		</where>
+	    ) 
+	 </select>
+	 <!-- 更新单据是否已经选择 -->
+	<update id="selectInvoiceNosAndIs_already" parameterType="map">
+		update b_invoice set
+		is_already = #{is_already}
+		where invoice_no in
+		<foreach collection="Nos" index="index" item="Nos" open="("  separator="," close=")">
+					#{Nos}
+		</foreach>
+	</update>
+</mapper>

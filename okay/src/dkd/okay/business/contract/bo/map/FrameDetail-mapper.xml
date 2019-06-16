@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FrameDetail">
+	<resultMap type="FrameDetail" id="frameDetailMap">
+	<id column="id" property="id" />
+	<result column="frame_head" property="frameHead" />
+	<result column="tender_frame_detail" property="tenderFrameDetail" />
+	<result column="material" property="material" />
+	<result column="main_price" property="mainPrice" />
+	<result column="secondary_price" property="secondaryPrice" />
+	<result column="purchased_quantity" property="purchasedQuantity" />
+	<result column="minimum_quantity" property="minimumQuantity" />
+	<result column="name" property="name" />
+	<result column="unit" property="unit" />
+	<result column="unit_help" property="unit_help" />
+	<result column="conversion" property="conversion" />
+	<result column="spec" property="spec" />
+	</resultMap>
+	
+	<!-- 删除框架协议明细信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_frame_detail 
+		where frame_head = #{frameHead}
+	</delete>
+	<!-- 新增框架协议明细信息 -->
+	<insert id="insert" parameterType="FrameDetail" >
+		insert into b_frame_detail
+		(id,frame_head,tender_frame_detail,material,main_price,secondary_price,purchased_quantity,minimum_quantity)
+		 VALUES
+		(#{id},#{frameHead},#{tenderFrameDetail},#{material},#{mainPrice},#{secondaryPrice},#{purchasedQuantity},#{minimumQuantity})
+	</insert>
+	<!-- 根据ID查询框架协议明细信息 -->
+	<select id="selectById" parameterType="map"  resultMap="frameDetailMap">
+		select 	b.*,m.name,d.dic_name unit,m.conversion,m.spec,c.dic_name unit_help  
+		from b_frame_detail b    
+		inner join base_material m on b.material=m.id
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		left join sys_dictionary c on  m.unit_help = c.dic_code
+		where b.frame_head = #{frame_id}
+		<if test="null != details"> 
+			and b.id not in
+			<foreach collection="details" index="index" item="item" open="(" separator="," close=")">
+	   			#{item}
+	   		</foreach>
+	   	</if>
+	</select>
+	<select id="getFrameDetailList" parameterType="String" resultMap="frameDetailMap">
+		select 	b.*,m.name,d.dic_name unit,m.conversion,m.spec
+		from  b_frame_detail b    
+		inner join base_material m on b.material=m.id
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		where b.frame_head = #{frameHeadId}
+	</select>
+	
+</mapper>

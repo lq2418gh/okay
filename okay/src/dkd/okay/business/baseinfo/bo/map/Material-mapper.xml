@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Material">
+
+	<resultMap type="Material" id="materialMap">
+		<id column="id" property="id" />
+		<result column="material_type" property="material_type" />
+		<result column="code" property="code" />
+		<result column="name" property="name" />
+		<result column="unit" property="unit" />
+		<result column="unit_help" property="unit_help" />
+		<result column="conversion" property="conversion" />
+		<result column="spec" property="spec" />
+		<result column="state" property="state" />
+		<result column="explain" property="explain" />
+		<result column="ParentCode" property="ParentCode" />
+		<result column="ParentName" property="ParentName" />
+	</resultMap>
+	
+	<sql id="all"> c.id,c.material_type,c.code,c.name,c.unit,c.unit_help,c.conversion,c.spec,c.state,c.explain</sql>
+	
+	<!-- 根据上级ID分页查询物料类别信息 -->
+	<select id="selectByCondition" resultMap="materialMap" parameterType="map">
+	select * from (
+		select m.id,m.material_type,m.code,m.name,d.dic_name unit,m.unit_help,m.conversion,m.spec,m.state,m.explain,ROW_NUMBER() OVER (order by m.code)  r 
+		from base_material m 
+		left outer join base_material_type mt on m.material_type  = mt.id 
+		left outer join sys_dictionary d on  m.unit = d.dic_code
+		<where>
+				<if test="parentId !=  null">
+					and mt.code like #{code} || '%'
+				</if>
+				<if test="material.state !=  null and material.state !=  '' ">
+					and m.state = #{material.state}
+				</if>
+			<if test="material !=  null">
+				<if test="material.code !=  null">
+					and m.code like '%' || #{material.code} || '%'
+				</if>
+				<if test="material.name !=  null">
+					and m.name like '%' || #{material.name} || '%'
+				</if>
+			</if>
+		</where>	
+			)s
+			<if test="page!= null">
+				where s.r
+				between #{page.startPos} and
+				(#{page.pageSize}+#{page.startPos}-1)
+			</if>
+		ORDER BY code 
+	</select>
+	
+	<!-- 根据上级ID查询物料类别信息数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from base_material m left outer join base_material_type mt on m.material_type  = mt.id 
+		<where>
+				<if test="parentId !=  null ">
+					and mt.code like #{code} || '%'
+				</if>
+				<if test="material.state !=  null and material.state !=  '' ">
+					and m.state = #{material.state}
+				</if>
+			<if test="material !=  null">
+				<if test="material.code !=  null">
+					and m.code like '%' || #{material.code} || '%' 
+				</if>
+				<if test="material.name !=  null">
+					and m.name like '%' || #{material.name} || '%' 
+				</if>
+			</if>
+		</where>
+	</select>
+	
+	<select id="selectByExport" resultMap="materialMap" parameterType="map">
+		select m.*,mt.code  
+		from base_material m 
+		left join base_material_type mt on m.material_type  = mt.id
+		left join base_material_type mt2 on mt.parent  = mt2.id
+		left join base_material_type mt3 on mt2.parent  = mt3.id
+		<if test="code !=  null">
+			and mt.code like #{code} || '%'
+		</if>
+		<if test="material !=  null">
+			<if test="material.code !=  null">
+				and m.code like '%' || #{material.code} || '%'
+			</if>
+			<if test="material.name !=  null">
+				and m.name like '%' || #{material.name} || '%'
+			</if>
+		</if>
+		ORDER BY mt.code
+	</select>
+	
+	<!-- 插入物资信息 -->
+	<insert id="insert" parameterType="Material" >
+		INSERT INTO base_material
+		(id,material_type,code,name,unit,unit_help,conversion,spec,state,explain) 
+		VALUES
+		(#{id},#{material_type},#{code},#{name},#{unit},#{unit_help},#{conversion},#{spec},#{state},#{explain})
+	</insert>
+	
+	<!-- 更新物资信息 -->
+	<update id="update" parameterType="Material">
+		UPDATE base_material SET
+		name = #{name},
+		unit = #{unit},
+		unit_help = #{unit_help},
+		conversion = #{conversion},
+		state = #{state},
+		spec = #{spec}, 
+		explain = #{explain}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 删除物料类别信息 -->
+	<delete id="delete" parameterType="String">
+		DELETE FROM base_material
+		WHERE id = #{id}
+	</delete>
+	
+	<!-- 根据物资ID查询物资信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="materialMap">
+		SELECT <include refid="all"/>
+		FROM base_material c
+		WHERE c.id = #{id}
+	</select>
+	
+	<!-- 根据物资ID查询物资信息 -->
+	<select id="selectMterialAndDicAndParentByPk" parameterType="String" resultMap="materialMap">
+		SELECT c.id,c.material_type,c.code,c.name,c.conversion,c.spec,c.state,c.explain,
+	    m.code ParentCode,
+	    m.name ParentName,
+		d.dic_name unit,
+		e.dic_name unit_help
+		FROM base_material c
+		inner join base_material_type m on  m.id = c.material_type
+		inner join sys_dictionary d on  c.unit = d.dic_code
+		left join sys_dictionary e on  c.unit_help = e.dic_code
+		WHERE c.id = #{id}
+	</select>
+	
+	<!-- 根据物资ID查询物资信息 -->
+	<select id="selectMterialAndParentByPk" parameterType="String" resultMap="materialMap">
+		SELECT c.id,c.material_type,c.code,c.name,c.conversion,c.spec,c.state,c.explain,c.unit,c.unit_help,
+	    m.code ParentCode,m.name ParentName
+		FROM base_material c
+		inner join base_material_type m on  m.id = c.material_type
+		WHERE c.id = #{id}
+	</select>
+	
+	<!-- 根据物资Material_type查询是否有物资信息 -->
+	<select id="selectByPid" parameterType="String" resultMap="materialMap">
+		SELECT <include refid="all"/>
+		FROM base_material c
+		WHERE c.material_type = #{material_type}
+	</select>
+	
+	<!-- 根据物资Material_type查询是否有物资信息,并进行编号自动赋值 -->
+	<select id="selectByPidDesc" parameterType="String" resultMap="materialMap">
+		SELECT <include refid="all"/>
+		FROM base_material c
+		WHERE c.material_type = #{material_type}
+		order by c.code desc
+	</select>
+	
+	<!-- 根据code查询是否编码已经存在 -->
+	<select id="selectMaterialCodeRepeat" parameterType="String" resultMap="materialMap">
+		SELECT <include refid="all"/>
+		FROM base_material c
+		WHERE c.code = #{code}
+	</select>
+		
+	<select id="findNoMaterialName" parameterType="map" resultMap="materialMap">
+		SELECT name from base_material where
+ 			<if test="noMaterialIds != null and noMaterialIds.size>0"> 
+				 id in 
+				<foreach collection="noMaterialIds" index="index" item="mIds" open="("  separator="," close=")">
+					#{mIds}
+	  			</foreach>
+  			</if>
+	</select>
+</mapper>

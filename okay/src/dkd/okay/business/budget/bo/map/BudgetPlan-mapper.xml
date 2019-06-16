@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="BudgetPlan">
+	<resultMap type="BudgetPlan" id="budgetPlanMap">
+	<id column="id" property="id" />
+    <result column="budget_no" property="budgetNo" />
+    <result column="company" property="company" />	
+    <result column="year" property="year" />
+    <result column="annual_budget" property="annualBudget" />
+    <result column="input_user" property="inputUser" />
+    <result column="input_date" property="inputDate" />
+    <result column="modify_date" property="modifyDate" />
+    <result column="state" property="state" />
+	</resultMap>
+	<sql id="all"> 
+	  p.id,p.budget_no,p.company,p.year,p.annual_budget,p.input_user,p.input_date,p.modify_date,p.state
+	</sql>
+	<!-- 新增科目预算信息 -->
+	<insert id="insert" parameterType="BudgetPlan" >
+		insert into b_budget_plan_head 
+		(id,budget_no,company,year,annual_budget,input_user,input_date,state)
+		 VALUES
+		(#{id},#{budgetNo},#{company},#{year},#{annualBudget},#{inputUser},#{inputDate},#{state})
+	</insert>
+	<!-- 更新科目预算信息 -->
+	<update id="update" parameterType="BudgetPlan">
+		update b_budget_plan_head   set 
+		annual_budget = #{annualBudget}, 
+		state = #{state},
+		modify_date=#{modifyDate}
+		where id = #{id}
+	</update>
+	<!-- 倒叙 查询同部门budget_no -->
+	<select id="selectBudgetNo" parameterType="String" resultType="String" >
+	select t.* from (select budget_no from b_budget_plan_head where company=#{company} order by input_date desc) t where rownum=1  
+	</select>
+	<!-- 通过年份和部门来查询单据 -->
+	<select id="selectCountByBudgetPlan" parameterType="BudgetPlan" resultType="int">
+	select count(*) from b_budget_plan_head where company=#{company} and year=#{year}
+	</select>
+	<!-- 根据分页查询计划预算信息 -->
+	<select id="selectByCondition" resultMap="budgetPlanMap" parameterType="map">
+	select * from(
+	    select t.*,ROW_NUMBER() OVER (order by input_date desc) an from (
+		select ROW_NUMBER() OVER (partition by company,year order by input_date desc) rn,p.* 
+		from b_budget_plan_head  p  
+		<where>
+		<if test="budgetPlan.budgetNo != null and budgetPlan.budgetNo !='' "> and  p.budget_no like '%' || #{budgetPlan.budgetNo} || '%' </if>
+		<if test="budgetPlan.year != null and budgetPlan.year !='' "> and  p.year = #{budgetPlan.year} </if>
+		<if test="budgetPlan.company != null and budgetPlan.company !='' "> and  p.company = #{budgetPlan.company} </if>
+		<if test="budgetPlan.state != null and budgetPlan.state !='' "> and  p.state = #{budgetPlan.state} </if>
+		</where>
+		) t
+		where t.rn=1
+		order by  t.input_date desc
+		)s
+		<if test="page!= null">
+			where s.an 
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	</select>
+	<!-- 根据上级ID查询计划预算信息数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+	select count (*) from (
+	    select * from (
+		select ROW_NUMBER() OVER (partition by company,year order by input_date desc) rn,p.* 
+		from b_budget_plan_head  p  
+		<where>
+		<if test="budgetPlan.budgetNo != null and budgetPlan.budgetNo !='' "> and  p.budget_no like '%' || #{budgetPlan.budgetNo} || '%' </if>
+		<if test="budgetPlan.year != null and budgetPlan.year !='' "> and  p.year = #{budgetPlan.year} </if>
+		<if test="budgetPlan.company != null and budgetPlan.company !='' "> and  p.company = #{budgetPlan.company} </if>
+		<if test="budgetPlan.state != null and budgetPlan.state !='' "> and  p.state = #{budgetPlan.state} </if>
+		</where>
+		) t
+		where t.rn=1
+		order by  t.input_date desc
+		)s
+	</select>
+	<!-- 根据ID查询计划预算信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="budgetPlanMap">
+		select 	<include refid="all" />  
+		from b_budget_plan_head  p    
+		where p.id = #{id}
+	</select>
+	<!-- 删除科目预算信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_budget_plan_head
+		where id = #{id}
+	</delete>
+	<!-- 判断数据计划预算中同年同部门之间审批通过的单据数量 -->
+	<select id="countByCompany" resultType="int" parameterType="BudgetPlan" >
+		select count(*) from b_budget_plan_head p  
+		where p.state ='审批通过' and  p.year = #{year} and  p.company = #{company}
+	</select>
+	<!-- 通过budget_no查询单据 -->
+	<select id="selectByCode" resultMap="budgetPlanMap" parameterType="String" >
+	select p.* from b_budget_plan_head p  where p.budget_no=#{budgetNo} 
+	</select>
+	<!-- 根据分页查询计划预算信息 -->
+	<select id="selectByHistory" resultMap="budgetPlanMap" parameterType="map">
+	select * from(
+	    select s.*,ROW_NUMBER() OVER (order by input_date desc) an from (
+		select ROW_NUMBER() OVER (partition by company,year order by input_date desc) rn,p.* 
+		from b_budget_plan_head  p  
+		<where>
+		<if test="budgetPlan.budgetNo != null and budgetPlan.budgetNo !='' "> and  p.budget_no like '%' || #{budgetPlan.budgetNo} || '%' </if>
+		<if test="budgetPlan.year != null and budgetPlan.year !='' "> and  p.year = #{budgetPlan.year} </if>
+		<if test="budgetPlan.company != null and budgetPlan.company !='' "> and  p.company = #{budgetPlan.company} </if>
+		<if test="budgetPlan.modifyStartDate != null and budgetPlan.modifyStartDate !='' "> and  p.modify_date &gt;= to_date(#{budgetPlan.modifyStartDate},'yyyy-MM-dd HH24:Mi:ss') </if>
+		<if test="budgetPlan.modifyEndDate != null and budgetPlan.modifyEndDate !='' "> and  p.modify_date &lt;=  to_date(#{budgetPlan.modifyEndDate},'yyyy-MM-dd HH24:MI:ss') </if>
+		<if test="budgetPlan.state != null and budgetPlan.state !='' "> and  p.state = #{budgetPlan.state} </if>
+		</where>
+		) s
+		where s.modify_date is not null
+		)t
+		<if test="page!= null">
+			where t.an 
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	</select>
+	<!-- 根据上级ID查询计划预算信息数量 -->
+	<select id="countByHistory" resultType="int" parameterType="map">
+	    select  count (*) from (
+		select ROW_NUMBER() OVER (partition by company,year order by input_date desc) rn,p.* 
+		from b_budget_plan_head  p  
+		<where>
+		<if test="budgetPlan.budgetNo != null and budgetPlan.budgetNo !='' "> and  p.budget_no like '%' || #{budgetPlan.budgetNo} || '%' </if>
+		<if test="budgetPlan.year != null and budgetPlan.year !='' "> and  p.year = #{budgetPlan.year} </if>
+		<if test="budgetPlan.company != null and budgetPlan.company !='' "> and  p.company = #{budgetPlan.company} </if>
+		<if test="budgetPlan.modifyStartDate != null and budgetPlan.modifyStartDate !='' "> and  p.modify_date &gt;=to_date(#{budgetPlan.modifyStartDate},'yyyy-mm-dd HH24:Mi:ss') </if>
+		<if test="budgetPlan.modifyEndDate != null and budgetPlan.modifyEndDate !='' "> and  p.modify_date &lt;=to_date(#{budgetPlan.modifyEndDate},'yyyy-mm-dd HH24:Mi:ss') </if>
+		<if test="budgetPlan.state != null and budgetPlan.state !='' "> and  p.state = #{budgetPlan.state} </if>
+		</where>
+		) t
+		where t.modify_date is not null
+	</select>
+	<!-- 根据部门查找ids -->
+	<select id="selectCom" resultType="String" parameterType="String">
+		select bph.id 
+		from b_budget_plan_head  bph 
+		where bph.company=#{company} and bph.state='审批通过' and bph.year=to_char(sysdate, 'yyyy') and bph.modify_date is null
+	</select>
+</mapper>

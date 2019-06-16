@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Supplier">
+	<resultMap type="Supplier" id="supplierMap">
+		<id column="ID" property="id"/>
+		<result column="SUPPLIER_NO" property="supplier_no"/>
+		<result column="SUPPLIER_NAME" property="supplier_name"/>
+		<result column="LEGAL_PERSON" property="legal_person"/>
+		<result column="PROVINCE" property="province"/>
+		<result column="ADDRESS" property="address"/>
+		<result column="FAX" property="fax"/>
+		<result column="EMAIL" property="email"/>
+		<result column="LINKMAN" property="linkman"/>
+		<result column="POST" property="post"/>
+		<result column="TEL" property="tel"/>
+		<result column="FINANCIAL_CONTACT" property="financial_contact"/>
+		<result column="FINANCIAL_TEL" property="financial_tel"/>
+		<result column="FINANCIAL_EMAIL" property="financial_email"/>
+		<result column="OPENING_BANK" property="opening_bank"/>
+		<result column="SOCIAL_CREDIT_CODE" property="social_credit_code"/>
+		<result column="QUALITY_SYSTEM" property="quality_system"/>
+		<result column="HYGIENE_LICENSE" property="hygiene_license"/>
+		<result column="FOOD_CIRCULATION_LICENSE" property="food_circulation_license"/>
+		<result column="SUPPLIER_TYPE" property="supplier_type"/>
+		<result column="STATE" property="state"/>
+		<result column="BRIEF_INTRODUCTION" property="brief_introduction"/>
+		<result column="REMARK" property="remark"/>
+		<result column="BANK_ACCOUNT_NUMBER" property="bank_account_number"/>
+		<result column="SCORE" property="score"/>
+		
+		<collection property="supplierScoreList" ofType="SupplierScore" column="id" select="getSupplierScore">
+			<id column="ID" property="id"/>
+			<result column="YEAR" property="year"/>
+			<result column="SCORE" property="score"/>
+			<result column="supplier_id" property="supplier_id"/>
+		</collection>
+	</resultMap>
+	<sql id="all">
+		a.id,a.supplier_no,a.supplier_name,a.legal_person,a.province,a.address,
+		a.fax,a.email,a.linkman,a.post,a.tel,a.financial_contact,a.financial_tel,a.financial_email,a.opening_bank,
+		a.social_credit_code,a.quality_system,a.hygiene_license,a.food_circulation_license,a.food_circulation_license,
+		a.supplier_type,a.state,a.brief_introduction,a.remark,bank_account_number
+	</sql>
+	<!--  -->
+	
+	<!-- 查询全部供应商信息 -->
+	<select id="selectAll" resultMap="supplierMap" >
+		select <include refid="all"/> from base_supplier a 
+		where  1=1
+	</select>
+	<!-- 分页查询供应商信息 -->
+	<select id="selectByCondition" resultMap="supplierMap" parameterType="map">
+	select * from (
+		select a.*,b.SCORE score,nvl(b.year,#{year}),ROW_NUMBER() OVER (order by supplier_name ) r 
+		from base_supplier a 
+		left join B_SUPPLIER_SCORE b on  b.supplier_id = a.ID
+		<where>
+			<if test="supplier_name != null and supplier_name != ''"> and a.supplier_name like '%' || #{supplier_name} || '%' </if>
+			<if test="supplier_no != null and supplier_no != ''">and a.supplier_no like '%' || #{supplier_no} || '%'</if>
+			<if test="province != null and province != ''">and a.province = #{province}</if>
+			<if test="supplier_type != null and supplier_type != ''">and a.supplier_type = #{supplier_type}</if>
+			<if test="state != null and state != ''"> and a.state = #{state} </if>
+			<if test="year != null and year != ''"> and nvl(b.year,#{year}) = #{year} </if>
+		</where>
+			order by a.supplier_no desc
+		)s
+		<if test="page!= null">
+			where s.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	</select>
+	<!-- 根据条件统计供应商数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from base_supplier a left join B_SUPPLIER_SCORE b on  b.supplier_id = a.ID
+		where 1=1
+		<if test="supplier_name != null and supplier_name != ''">and a.supplier_name like '%' || #{supplier_name} || '%'</if>
+		<if test="supplier_no != null and supplier_no != ''"> and a.supplier_no like '%' ||  #{supplier_no} || '%' </if>
+		<if test="province != null and province != ''">  and a.province like '%' ||  #{province} || '%' </if>
+		<if test="supplier_type != null and supplier_type != ''"> and a.supplier_type = #{supplier_type} </if>
+		<if test="state != null and state != ''"> and a.state = #{state} </if>
+		<if test="year != null and year != ''">  and nvl(b.year,#{year}) = #{year}</if>
+	</select>
+	<!-- 根据id查找供应商 -->
+	<select id="selectByPk" resultMap="supplierMap" parameterType="String">
+		select <include refid="all"/> from base_supplier a 
+		where  a.id = #{supplierId}
+	</select>
+	<select id="getSupplierScore" parameterType="String" resultType="SupplierScore">
+		select id,year,score from b_supplier_score where supplier_id = #{supplierId}
+	</select>
+	<!-- 统计供应商数量 -->
+	<select id="findMaxNo" resultType="String">
+		select max(a.supplier_no) from base_supplier a
+	</select>
+	<!--  -->
+	<select id="findSupplierByName" resultType="int" parameterType="String">
+		select count(*) from base_supplier a where a.supplier_name = #{supplier_name}
+	</select>
+	
+	<select id="findSupplierByNameAndId" resultType="int" parameterType="map">
+		select count(*) from base_supplier a where a.supplier_name = #{supplier_name} and a.id != #{id}
+	</select>
+	
+	<!-- 新增 -->
+	<insert id="insert" parameterType="Supplier">
+		insert into base_supplier 
+		(id,supplier_no,supplier_name,legal_person,province,address,fax,email,linkman,post,
+		tel,financial_contact,financial_tel,financial_email,opening_bank,social_credit_code,
+		quality_system,hygiene_license,food_circulation_license,supplier_type,state,
+		brief_introduction,remark,bank_account_number)
+		 VALUES
+		(#{id},#{supplier_no},#{supplier_name},#{legal_person},#{province},#{address},#{fax},#{email},#{linkman},#{post},
+		#{tel},#{financial_contact},#{financial_tel},#{financial_email},#{opening_bank},#{social_credit_code},
+		#{quality_system},#{hygiene_license},#{food_circulation_license},#{supplier_type},
+		#{state},#{brief_introduction},#{remark},#{bank_account_number})
+	</insert>
+	<!-- 更新 -->
+	<update id="update" parameterType="Supplier">
+		update  base_supplier
+		set
+			supplier_name = #{supplier_name},
+			legal_person = #{legal_person},
+			province = #{province},
+			address = #{address},
+			fax = #{fax},
+			email = #{email},
+			<if test="linkman!= null and linkman!= ''">linkman = #{linkman},</if>
+			post = #{post},
+			tel = #{tel},
+			financial_contact = #{financial_contact},
+			financial_tel = #{financial_tel},
+			financial_email = #{financial_email},
+			opening_bank = #{opening_bank},
+			social_credit_code = #{social_credit_code},
+			quality_system = #{quality_system},
+			hygiene_license = #{hygiene_license},
+			food_circulation_license = #{food_circulation_license},
+			supplier_type = #{supplier_type},
+			state = #{state},
+			brief_introduction = #{brief_introduction},
+			remark  = #{remark},
+			bank_account_number  = #{bank_account_number}
+			where id = #{id}
+	</update>
+	
+	<delete id="delete" parameterType="String">
+        delete from base_supplier where id=#{supplier_id}
+    </delete>
+    <!-- 根据供应商编码查找供应商 -->
+    <select id="getSupplierByNo" parameterType="String" resultMap="supplierMap">
+    	select * from base_supplier a 
+		where  a.supplier_no = #{supplier_no}
+    </select>
+	<select id="findNoSupplierName" parameterType="map" resultMap="supplierMap">
+		SELECT SUPPLIER_NAME from base_supplier where
+ 			<if test="noSuppliers != null"> 
+				 ID in 
+				<foreach collection="noSuppliers" index="index" item="sIds" open="("  separator="," close=")">
+					#{sIds}
+	  			</foreach>
+  			</if>
+	</select>
+</mapper>

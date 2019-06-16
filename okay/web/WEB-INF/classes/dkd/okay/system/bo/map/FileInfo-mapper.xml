@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FileInfo">
+	<resultMap type="FileInfo" id="FileInfoMap">
+		<id column="file_id" property="file_id"/>
+		<result column="file_module_name" property="file_module_name"/>
+		<result column="file_module_code" property="file_module_code"/>
+		<result column="file_type_name" property="file_type_name"/>
+		<result column="file_type_code" property="file_type_code"/>
+		<result column="des" property="des"/>
+		<result column="fk_id" property="fk_id"/>
+		<result column="file_path" property="file_path"/>
+		<result column="INPUT_DATE" property="INPUT_DATE"/>
+		<result column="INPUT_USERID" property="INPUT_USERID"/>
+		<result column="INPUT_USERNAME" property="INPUT_USERNAME"/>
+		<result column="INPUT_DEPTID" property="INPUT_DEPTID"/>
+		<result column="INPUT_DEPTNAME" property="INPUT_DEPTNAME"/>
+		<result column="ifdel" property="ifdel"/>
+		<result column="file_beginTime" property="file_beginTime"/>
+		<result column="file_endtTme" property="file_endTime"/>
+		<result column="file_old" property="file_old"/>
+		<result column="IMPORT_NO" property="importNo"/>
+		<result column="real_name" property="realName"/>
+		<result column="company_id" property="companyId"/>
+	</resultMap>
+	<!-- 查询进出口账单 --> 
+	<select id="selectshopByCondition" resultMap="FileInfoMap" parameterType="map">
+		select * from (
+			select fi.*,ROW_NUMBER() OVER (order by fi.file_id) as r from sys_file_info  fi
+			<where>	
+			    fi.ifdel = 0 and fi.company_id=#{companyId}
+			    <if test="fileInfo.file_type_name != null and fileInfo.file_type_name != ''">and fi.file_type_code like '%' || #{fileInfo.file_type_name} || '%'</if>										
+				<if test="fileInfo.file_path != null and fileInfo.file_path != ''">and fi.file_path like '%' || #{fileInfo.file_path} || '%'</if>
+				<if test="fileInfo.INPUT_USERNAME != null and fileInfo.INPUT_USERNAME != '' ">and fi.INPUT_USERNAME like '%' || #{fileInfo.INPUT_USERNAME} || '%'</if>						
+			    <if test="fileInfo.file_beginTime != null and fileInfo.file_beginTime != ''">
+					and <![CDATA[ #{fileInfo.file_beginTime}|| ' 00:00:00'<=fi.INPUT_DATE ]]>
+				</if>
+				<if test="fileInfo.file_endTime != null and fileInfo.file_endTime != ''">
+					and <![CDATA[ fi.INPUT_DATE<=#{fileInfo.file_endTime}|| ' 23:59:59' ]]>
+				</if>
+			</where>  		
+		) s where file_module_name='进出口货物台账'  order by s.input_date desc 
+	</select>
+	<!-- 查询进出口账单数据量 --> 
+	<select id="countShopParam" resultType="int" parameterType="map">
+		select count(*) from sys_file_info  fi
+			<where>	
+			    fi.ifdel = 0 and fi.company_id=#{companyId} and file_module_name='进出口货物台账'
+			    <if test="fileInfo.file_type_name != null and fileInfo.file_type_name != ''">and fi.file_type_code like '%' || #{fileInfo.file_type_name} || '%'</if>										
+				<if test="fileInfo.file_path != null and fileInfo.file_path != ''">and fi.file_path like '%' || #{fileInfo.file_path} || '%'</if>
+				<if test="fileInfo.INPUT_USERNAME != null and fileInfo.INPUT_USERNAME != '' ">and fi.INPUT_USERNAME like '%' || #{fileInfo.INPUT_USERNAME} || '%'</if>						
+			    <if test="fileInfo.file_beginTime != null and fileInfo.file_beginTime != ''">
+					and <![CDATA[ #{fileInfo.file_beginTime} || ' 00:00:00'<=fi.INPUT_DATE ]]>
+				</if>
+				<if test="fileInfo.file_endTime != null and fileInfo.file_endTime != ''">
+					and <![CDATA[ fi.INPUT_DATE<=#{fileInfo.file_endTime} || ' 23:59:59' ]]>
+				</if>		
+			</where>  		
+	</select>
+	<update id="updateShop" parameterType="map" >
+		UPDATE sys_file_info SET
+		file_old ='1'
+		WHERE file_id = #{file_id}
+	</update>
+	
+	<!-- 条件分页查询 --> 
+	<select id="selectByCondition" resultMap="FileInfoMap" parameterType="map">
+		select * from (
+			select fi.*,ROW_NUMBER() OVER (order by fi.file_path ASC,fi.file_id) as r from sys_file_info  fi
+			<where>
+				fi.ifdel = 0
+				<if test="fileInfoForm.file_module_code != null and fileInfoForm.file_module_code != '' and fileInfoForm.file_module_code!='module_qualified' 
+				and fileInfoForm.file_module_code!='module_unqualified' and fileInfoForm.file_module_code!='module_blacklist' and fileInfoForm.file_module_code!='module_custom_qualified' ">and fi.file_module_code = #{fileInfoForm.file_module_code}</if>
+				<!-- fileInfoForm.file_module_code!='module_qualified'   是为了合格供应商能查询到新建状态时上传的文件-->
+				<if test="fileInfoForm.fk_id != null and fileInfoForm.fk_id != ''">and (fi.fk_id = #{fileInfoForm.fk_id}
+					<if test="fileInfoForm.nos != null and fileInfoForm.nos.size > 0">
+						or fi.fk_id in 
+						<foreach collection="fileInfoForm.nos" index="index" item="item" open="("    separator="," close=")">
+				   			#{item}
+				  		</foreach>
+			  		</if>
+				)</if>
+				<if test="fileInfoForm.file_type_code != null and fileInfoForm.file_type_code != ''">and fi.file_type_code = #{fileInfoForm.file_type_code}</if>
+				<if test="fileInfoForm.file_path != null and fileInfoForm.file_path != ''">and fi.file_path like '%' || #{fileInfoForm.file_path} || '%'</if>
+				<if test="fileInfoForm.importNo != null and fileInfoForm.importNo != ''">and fi.IMPORT_NO = #{fileInfoForm.importNo}</if>
+				<if test="fileInfoForm.INPUT_USERNAME != null and fileInfoForm.INPUT_USERNAME != '' ">and fi.INPUT_USERNAME  like '%' || #{fileInfoForm.INPUT_USERNAME} || '%'</if>
+				<if test="fileInfoForm.beginTime != null and fileInfoForm.beginTime != ''">
+					and <![CDATA[#{fileInfoForm.beginTime}<=to_char(fi.INPUT_DATE,'yyyy-MM-dd') ]]>
+				</if>
+				<if test="fileInfoForm.endTime != null and fileInfoForm.endTime != ''">
+					and <![CDATA[to_char(fi.INPUT_DATE,'yyyy-MM-dd')<=#{fileInfoForm.endTime}]]>
+				</if>
+			</where>  
+		) s where s.r between #{page.startPos} and ((#{page.pageSize}+#{page.startPos})-1)  order by s.input_date desc 
+	</select>
+	<!-- 计算数据量 --> 
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from sys_file_info  fi
+		<where>
+			fi.ifdel = 0
+			<if test="fileInfoForm.importNo != null and fileInfoForm.importNo != ''">and fi.IMPORT_NO = #{fileInfoForm.importNo}</if>
+			<if test="fileInfoForm.file_module_code != null and fileInfoForm.file_module_code != '' and fileInfoForm.file_module_code!='module_qualified' 
+				and fileInfoForm.file_module_code!='module_unqualified' and fileInfoForm.file_module_code!='module_blacklist'">and fi.file_module_code = #{fileInfoForm.file_module_code}</if>
+			<if test="fileInfoForm.fk_id != null and fileInfoForm.fk_id != ''">and (fi.fk_id = #{fileInfoForm.fk_id}
+				<if test="fileInfoForm.nos != null and fileInfoForm.nos.size > 0">
+					or fi.fk_id in 
+					<foreach collection="fileInfoForm.nos" index="index" item="item" open="("    separator="," close=")">
+			   			#{item}
+			  		</foreach>
+		  		</if>
+			)</if>
+			<if test="fileInfoForm.file_type_code != null and fileInfoForm.file_type_code != ''">and fi.file_type_code = #{fileInfoForm.file_type_code}</if>
+			<if test="fileInfoForm.file_path != null and fileInfoForm.file_path != ''">and fi.file_path like '%' || #{fileInfoForm.file_path} || '%'</if>
+			<if test="fileInfoForm.INPUT_USERNAME != null and fileInfoForm.INPUT_USERNAME != '' ">and fi.INPUT_USERNAME = #{fileInfoForm.INPUT_USERNAME}</if>
+			<if test="fileInfoForm.beginTime != null and fileInfoForm.beginTime != ''">
+				and <![CDATA[#{fileInfoForm.beginTime}<=to_char(fi.INPUT_DATE,'yyyy-MM-dd') ]]>
+			</if>
+			<if test="fileInfoForm.endTime != null and fileInfoForm.endTime != ''">
+				and <![CDATA[to_char(fi.INPUT_DATE,'yyyy-MM-dd')<=#{fileInfoForm.endTime}]]>
+			</if>	
+		</where>
+	</select>
+	<!-- 新增 -->  
+	<insert id="insert" parameterType="FileInfo">
+		insert into sys_file_info (
+			IMPORT_NO,file_id,file_module_name,file_module_code,file_type_name,file_type_code,des,fk_id,file_path,
+			INPUT_DATE,INPUT_USERID,INPUT_USERNAME,INPUT_DEPTID,INPUT_DEPTNAME,real_name
+		) values (
+			#{importNo},#{file_id},#{file_module_name},#{file_module_code},#{file_type_name},#{file_type_code},#{des},#{fk_id},#{file_path},
+			#{INPUT_DATE},#{INPUT_USERID},#{INPUT_USERNAME},#{INPUT_DEPTID},#{INPUT_DEPTNAME},#{realName}
+		)
+	</insert>
+	<!-- 删除 --> 
+	<update id="delete" parameterType="string">	
+		update sys_file_info set ifdel = 1 where file_id = #{file_id}
+	</update> 
+	<select id="selectByPk" parameterType="string" resultMap="FileInfoMap">
+		select * from sys_file_info where file_id = #{file_id}
+	</select>
+	<select id="selectFileByReceiveNo" parameterType="string" resultMap="FileInfoMap">
+		select * from sys_file_info 
+		where (import_no = #{receivingNo} 
+		or  (fk_id = (select quality_no from t_quality_head where RECEIVING_NO=#{receivingNo}) and fk_id is not null and fk_id !=''))
+		and ifdel=0
+	</select>
+	<select id="selectFileByName" parameterType="map" resultMap="FileInfoMap">
+		select * from sys_file_info where fk_id = #{fkId} and file_path=#{fileName} and ifdel=0 and year(INPUT_DATE)=year(getDate())
+	</select>
+	<select id="selectFileBySupplierId" parameterType="map" resultMap="FileInfoMap">
+		select DISTINCT file_path from sys_file_info where fk_id = #{fkId} and ifdel=0 and year(INPUT_DATE)=year(getDate()) and file_path in 
+		<foreach collection="names" index="index" item="item" open="("    separator="," close=")">
+			#{item}
+		</foreach>
+	</select>
+	<update id="updateByQuality" parameterType="map">	
+		update sys_file_info set fk_id=#{qualityNo},import_no = '' where import_no = #{receivingNo}
+	</update>
+	<select id="selectByDeleteFile" parameterType="map" resultMap="FileInfoMap">
+		select * from sys_file_info where fk_id = #{fkId} and ifdel=0 and year(INPUT_DATE)=year(getDate())
+		 <if test="type!=null and type!= ''">
+		     and (file_module_code ='module_custom_qualified' or file_module_code='module_qualified')
+		 </if>
+		 and file_path in 
+		<foreach collection="names" index="index" item="item" open="("    separator="," close=")">
+			#{item}
+		</foreach>
+	</select>
+	<!-- 合格货运代理模块判断文件个数 -->
+	<select id="selectFileByNameAndModule" parameterType="map" resultMap="FileInfoMap">
+		select * from sys_file_info where fk_id = #{fkId} and file_path=#{fileName}
+			and file_module_name=#{module}
+		 	and ifdel=0 and year(INPUT_DATE)=year(getDate())
+	</select>
+	<!-- 查找文件-->
+	<select id="selectFileByCodeAndPk" parameterType="String" resultMap="FileInfoMap">
+		select * from sys_file_info
+		where fk_id = #{fk_id} and file_module_code='module_tender'
+	</select>
+</mapper>

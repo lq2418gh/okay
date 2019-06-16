@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Purchase">
+	<resultMap type="Purchase" id="purchaseMap">
+		<id column="ID" property="id" />
+		<result column="PLAN_NO" property="plan_no" />
+		<result column="DEPARTMENT" property="departmentId" />
+		<result column="INPUT_USERID" property="input_userid" />
+		<result column="INPUT_DATE" property="input_date" />
+		<result column="YEAR" property="year" />
+		<result column="ALL_AMOUNT" property="all_amount" />
+		
+		<association property="userInfo" javaType="UserInfo">
+			<id column="userinfo_id" property="userinfo_id" />
+			<result column="user_id" property="user_id"/>
+			<result column="realName" property="realName" />
+		</association>
+		
+		<association property="company" javaType="Company">
+			<id column="company_id" property="companyId"/>
+			<result column="company_name" property="companyName"/>
+		</association>
+	</resultMap>
+	
+	<resultMap type="Purchase" id="purchaseMapEdit">
+		<id column="ID" property="id" />
+		<result column="PLAN_NO" property="plan_no" />
+		<result column="DEPARTMENT" property="departmentId" />
+		<result column="INPUT_USERID" property="input_userid" />
+		<result column="INPUT_DATE" property="input_date" />
+		<result column="YEAR" property="year" />
+		<result column="ALL_AMOUNT" property="all_amount" />
+		
+		<association property="userInfo" javaType="UserInfo">
+			<id column="userinfo_id" property="userinfo_id" />
+			<result column="user_id" property="user_id"/>
+			<result column="realName" property="realName" />
+		</association>
+		
+		<association property="company" javaType="Company">
+			<id column="company_id" property="companyId"/>
+			<result column="company_name" property="companyName"/>
+		</association>
+		
+		<collection column="ID" property="purchaseDetailList" ofType="PurchaseDetail">
+        	<id column="pid" property="id"/>
+        	<result column="purchaseDetail_row_no" property="purchaseDetail_row_no"/>
+        	<result column="materiel_id" property="materiel_id"/>
+			<result column="demand_quantity" property="demand_quantity"/>
+			<result column="purpose" property="purpose"/>
+			<result column="budget_account" property="budget_account"/>
+			<result column="budget_amount" property="budget_amount"/>
+			<result column="demand_date" property="demand_date"/>
+			<result column="purchase_head_id" property="purchase_head_id"/>
+			<result column="all_budget_amount" property="all_budget_amount"/>
+			<result column="code" property="code"/>
+			<result column="name" property="name"/>
+			<result column="unit" property="unit"/>
+			<result column="spec" property="spec"/>
+			<result column="bud_ac_name" property="bud_ac_name"/>
+        </collection> 
+	</resultMap>
+	
+	<sql id="all">  p.ID,p.PLAN_NO,p.DEPARTMENT,p.INPUT_USERID,p.INPUT_DATE,p.YEAR</sql>
+	<!-- 分页模糊 purchase-->
+	<select id="selectByCondition" resultMap="purchaseMap" parameterType="map">
+		select * from (
+		select p.*,u.realName,c.company_name ,ROW_NUMBER() OVER (order by PLAN_NO ) r 
+		from  B_PURCHASEPLAN_HEAD p
+		inner join SYS_USERINFO u on  u.user_id = p.INPUT_USERID
+		inner join sys_company c on  c.company_id = p.DEPARTMENT
+		<where> 
+		<if test="purchase.departmentId != null and purchase.departmentId != ''">p.DEPARTMENT=#{purchase.departmentId}</if>
+		<if test="purchase.year != null and purchase.year != ''">and  p.YEAR like '%' || #{purchase.year} || '%' </if>
+		<if test="purchase.plan_no != null and purchase.plan_no != ''"> and p.PLAN_NO like '%' || #{purchase.plan_no} || '%'</if>
+		</where>
+		order by PLAN_NO desc 
+		)s
+		<if test="page!= null">
+			where s.r
+			between (#{page.totalCount}-#{page.pageNow}*#{page.pageSize}+1)
+			and (#{page.totalCount}-(#{page.pageNow}-1)*#{page.pageSize})
+		</if>
+	</select>
+	<!-- 查询记录数 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from B_PURCHASEPLAN_HEAD p 
+		<where>
+			<if test="purchase.departmentId != null and purchase.departmentId != ''">p.DEPARTMENT=#{purchase.departmentId}</if>
+			<if test="purchase.year != null and purchase.year != ''"> and p.YEAR like '%' || #{purchase.year} || '%' </if>
+			<if test="purchase.plan_no != null and purchase.plan_no != ''"> and p.PLAN_NO like '%' ||  #{purchase.plan_no} || '%'</if>
+		</where>
+	</select>
+	
+	<!-- 倒叙 查询PLAN_NO -->
+	<select id="selectPurchasePlanNo" resultType="String" >
+	select t.* from (select PLAN_NO from b_purchaseplan_head order by PLAN_NO desc) t where rownum=1  
+	</select>
+	
+	<select id="selectCountByYear" parameterType="String" resultType="int">
+	select count(*) from b_purchaseplan_head where YEAR =#{year}
+	</select>
+	
+	
+	<select id="findCUById" parameterType="java.lang.String" resultType="Purchase">
+		select p.*, COMPANY_NAME ,REALNAME 
+		from b_purchaseplan_head p,SYS_COMPANY c ,SYS_USERINFO u
+			<where>
+				p.DEPARTMENT = c.company_id and p.INPUT_USERID = u.USER_ID and p.id = #{id}
+			</where>
+	</select>
+	
+	
+	<!-- 插入数据 -->
+	<insert id="insert" parameterType="Purchase">
+	INSERT INTO b_purchaseplan_head
+	(id,plan_no,department,input_userid,input_date,year,all_amount) 
+	VALUES
+	(#{id},#{plan_no},#{departmentId},#{input_userid},#{input_date},#{year},#{all_amount})
+	</insert>
+	
+	<delete id="delPur" parameterType="java.lang.String">
+	 delete from b_purchaseplan_head where ID = #{id}
+	</delete>
+	
+	<!-- 根据id获取 -->  
+	<select id="selectByPk" parameterType="string" resultMap="purchaseMap">
+	SELECT <include refid="all"/>
+	FROM b_purchaseplan_head p
+	WHERE  p.id= #{id}
+	</select>
+	
+	<!-- 根据id获取 -->  
+	<select id="selectByPlanID" parameterType="string" resultMap="purchaseMap">
+	select p.*,u.realname,c.company_name from b_purchaseplan_head p 
+	inner join SYS_USERINFO u on u.userinfo_id = p.INPUT_USERID 
+	inner join sys_company c on  c.company_id = p.DEPARTMENT
+	where p.id= #{id}
+	</select>
+	
+	<select id="selectCountPlan" parameterType="Purchase" resultType="int">
+		select count(*) from B_PURCHASEPLAN_HEAD where DEPARTMENT = #{departmentId} and YEAR=#{year}
+	</select>
+	
+	<!-- 根据采购计划主表id查询 -->
+	<select id="selectDetailById" parameterType="String" resultMap="purchaseMapEdit">
+		select p.* , u.realname , c.company_name , a.name bud_ac_name , pd.id pid,pd.purchaseDetail_row_no, m.id materiel_id, m.code , m.name , d.dic_name unit , m.spec, pd.demand_quantity , pd.purpose , pd.budget_account , pd.budget_amount , pd.demand_date
+		from b_purchaseplan_head P 
+		INNER JOIN  b_purchaseplan_DETAIL PD ON P.ID=pd.purchase_head_id 
+		inner join BASE_MATERIAL m on  m.id = PD.MATERIEL_ID 
+		inner join B_BUDGET_ACCOUNT a on  a.id = PD.BUDGET_ACCOUNT
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		inner join SYS_USERINFO u on u.user_id = p.INPUT_USERID 
+		inner join sys_company c on  c.company_id = p.DEPARTMENT
+		<where>
+			pd.PURCHASE_HEAD_ID = #{plan_id}
+		</where>
+		order by pd.purchaseDetail_row_no
+	</select>
+	
+	<select id="selectYearById" parameterType="String" resultType="String">
+		select YEAR from B_PURCHASEPLAN_HEAD where id=#{id}
+	</select>
+	<!-- 更新year -->
+	<update id="update" parameterType="Purchase">
+		update b_purchaseplan_head set YEAR = #{year} ,ALL_AMOUNT = #{all_amount}  where ID=#{id}
+	</update>
+</mapper>

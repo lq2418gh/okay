@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TenderContractDetail">
+	<resultMap type="TenderContractDetail" id="tenderContractDetailMap">
+		<id column="id" property="id" />
+		<result column="tender_contract" property="tender_contract" />
+		<result column="material" property="material" />
+		<result column="main_Price" property="main_Price" />
+		<result column="secondary_Price" property="secondary_Price" />
+		<result column="quantity" property="quantity" />
+		<result column="purchase_detail_id" property="purchase_detail_id" />
+		<result column="purchase_head_id" property="purchase_head_id" />
+		<result column="tcd_row_num" property="tcd_row_num" />
+		<result column="budget_plan_detail" property="budget_plan_detail" />
+		<result column="centralized_department" property="centralized_department" />
+		<result column="account" property="account" />
+	</resultMap>
+	<!-- 查找物资信息-->
+	<select id="selectMaterial"  parameterType="String" resultMap="tenderContractDetailMap">
+	select tfd.* 
+	from b_tender_contract_detail tfd
+	where tfd.tender_contract=#{tender_contract}
+	</select>
+		<!-- 查找ID-->
+	<select id="selectID"  parameterType="map" resultMap="tenderContractDetailMap">
+	select tfd.* 
+	from b_tender_contract_detail tfd
+	where tfd.tender_contract=#{tender_contract} and tfd.tcd_row_num=#{tcd_row_num}
+	</select>
+	<!-- 设置中标价格 -->
+	<update id="updatePrice" parameterType="map">
+		update b_tender_contract_detail set main_Price = #{main_Price}
+		<if test="secondary_Price != null and secondary_Price != ''">,secondary_Price=#{secondary_Price}</if>
+		where id=#{tender_detail}
+	</update>
+	
+	<insert id="insert" parameterType="TenderContractDetail">
+		INSERT INTO b_tender_contract_detail
+		(id,tender_contract,material,main_Price,secondary_Price,quantity,purchase_detail_id,purchase_head_id,tcd_row_num,budget_plan_detail,centralized_department,account) 
+		VALUES
+		(#{id},#{tender_contract},#{material},#{main_Price},#{secondary_Price},#{quantity},#{purchase_detail_id},#{purchase_head_id},#{tcd_row_num},#{budget_plan_detail},#{centralized_department},#{account})
+	</insert>
+	
+	<delete id="delete" parameterType="String">
+		 delete from b_tender_contract_detail where tender_contract=#{id}
+	</delete>
+	
+	<select id="findDtetailById" parameterType="String" resultMap="tenderContractDetailMap">
+		select purchase_detail_id from b_tender_contract_detail where tender_contract=#{id}
+	</select>
+</mapper>

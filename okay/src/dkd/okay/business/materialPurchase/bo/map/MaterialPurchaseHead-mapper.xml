@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="MaterialPurchaseHead">
+
+	<resultMap type="MaterialPurchaseHead" id="MaterialPurchaseHeadMap">
+		<id column="id" property="id" />
+		<result column="purchase_no" property="purchase_no" />
+		<result column="state" property="state" />
+		<result column="centralized_department" property="centralized_department" />
+		<result column="input_date" property="input_date" />
+		<result column="purchase_time_limit" property="purchase_time_limit" />
+		<result column="purchase_department" property="purchase_department" />
+		<result column="input_userid" property="input_userid" />
+		<result column="contract_number" property="contract_number" />
+		<result column="purchase_explain" property="purchase_explain" />
+		<result column="purchase_type" property="purchase_type" />
+		<result column="realName" property="realName"/>
+		<result column="company_name" property="company_name"/>
+		<collection property="materialPurchaseDetailList" ofType="MaterialPurchaseDetail">
+			<id column="pid" property="id" />
+			<result column="purchase_head_id" property="purchase_head_id" />
+			<result column="purchase_row_no" property="purchase_row_no" />
+			<result column="material" property="material" />
+			<result column="main_Price" property="main_Price" />
+			<result column="main_Quantity" property="main_Quantity" />
+			<result column="secondary_Price" property="secondary_Price" />
+			<result column="secondary_Quantity" property="secondary_Quantity" />
+			<result column="amount" property="amount" />
+			<result column="budget_plan_detail" property="budget_plan_detail" />
+			<result column="name" property="name" />
+			<result column="unit" property="unit" />
+			<result column="spec" property="spec" />
+			<result column="conversion" property="conversion" />
+			<result column="stock" property="stock" />
+			<result column="account" property="account" />
+			<result column="budgetAmount" property="budgetAmount" />
+			<result column="budgetuse" property="budgetuse" />
+		</collection>
+	</resultMap>
+	
+	<!-- 分页模糊查询 -->
+	<select id="selectByCondition" resultMap="MaterialPurchaseHeadMap" parameterType="map">
+		select * from (
+		select h.*,u.realName,c.company_name ,ROW_NUMBER() OVER (order by purchase_no ) r 
+		from  B_MATERIAL_PURCHASE_HEAD h
+		inner join SYS_USERINFO u on  u.user_id = h.input_userid
+		inner join sys_company c on  c.company_id = h.centralized_department
+		<where> 
+		<if test="materialPurchaseHead.centralized_department != null and materialPurchaseHead.centralized_department != ''">h.centralized_department=#{materialPurchaseHead.centralized_department}</if>
+		<if test="materialPurchaseHead.state != null and materialPurchaseHead.state != ''">and  h.state= #{materialPurchaseHead.state}</if>
+		<if test="materialPurchaseHead.purchase_type != null and materialPurchaseHead.purchase_type != ''">and  h.purchase_type= #{materialPurchaseHead.purchase_type}</if>
+		<if test="materialPurchaseHead.purchase_no != null and materialPurchaseHead.purchase_no != ''"> and h.purchase_no like '%' || #{materialPurchaseHead.purchase_no} || '%'</if>
+		<if test="materialPurchaseHead.inputDateBegin != null and materialPurchaseHead.inputDateBegin != ''"> and h.input_date &gt;=to_date(#{materialPurchaseHead.inputDateBegin},'yyyy-mm-dd')</if>
+		<if test="materialPurchaseHead.inputDateEnd != null and materialPurchaseHead.inputDateEnd != ''"> and h.input_date &lt;=to_date(#{materialPurchaseHead.inputDateEnd},'yyyy-mm-dd')</if>
+		<if test="materialPurchaseHead.ptlBeginTime != null and materialPurchaseHead.ptlBeginTime != ''"> and h.purchase_time_limit &gt;=to_date(#{materialPurchaseHead.ptlBeginTime},'yyyy-mm-dd') </if>
+		<if test="materialPurchaseHead.ptlEndTime != null and materialPurchaseHead.ptlEndTime != ''"> and h.purchase_time_limit &lt;=to_date(#{materialPurchaseHead.ptlEndTime},'yyyy-mm-dd') </if>
+		</where>
+		)s
+		<if test="page!= null">
+			where s.r
+			between (#{page.totalCount}-#{page.pageNow}*#{page.pageSize}+1)
+			and (#{page.totalCount}-(#{page.pageNow}-1)*#{page.pageSize})
+		</if>
+		order by purchase_no desc 
+	</select>
+	
+	<!-- 查询记录数 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from B_MATERIAL_PURCHASE_HEAD h 
+		<where>
+			<if test="materialPurchaseHead.centralized_department != null and materialPurchaseHead.centralized_department != ''">h.centralized_department=#{materialPurchaseHead.centralized_department}</if>
+			<if test="materialPurchaseHead.state != null and materialPurchaseHead.state != ''">and  h.state= #{materialPurchaseHead.state}</if>
+			<if test="materialPurchaseHead.purchase_type != null and materialPurchaseHead.purchase_type != ''">and  h.purchase_type= #{materialPurchaseHead.purchase_type}</if>
+			<if test="materialPurchaseHead.purchase_no != null and materialPurchaseHead.purchase_no != ''"> and h.purchase_no like '%' || #{materialPurchaseHead.purchase_no} || '%'</if>
+			<if test="materialPurchaseHead.inputDateBegin != null and materialPurchaseHead.inputDateBegin != ''"> and h.input_date &gt;=to_date(#{materialPurchaseHead.inputDateBegin},'yyyy-mm-dd')</if>
+			<if test="materialPurchaseHead.inputDateEnd != null and materialPurchaseHead.inputDateEnd != ''"> and h.input_date &lt;=to_date(#{materialPurchaseHead.inputDateEnd},'yyyy-mm-dd')</if>
+			<if test="materialPurchaseHead.ptlBeginTime != null and materialPurchaseHead.ptlBeginTime != ''"> and h.purchase_time_limit &gt;=to_date(#{materialPurchaseHead.ptlBeginTime},'yyyy-mm-dd') </if>
+			<if test="materialPurchaseHead.ptlEndTime != null and materialPurchaseHead.ptlEndTime != ''"> and h.purchase_time_limit &lt;=to_date(#{materialPurchaseHead.ptlEndTime},'yyyy-mm-dd') </if>
+		</where>
+	</select>	
+	
+	<!-- 根据id删除 -->
+	<delete id="delete" parameterType="java.lang.String">
+	 	delete from B_MATERIAL_PURCHASE_HEAD where id = #{primaryKey}
+	</delete>
+	
+	<!-- 查看  -->
+	<select id="findMP" parameterType="String" resultMap="MaterialPurchaseHeadMap">
+		select h.* , u.realname , c.company_name ,
+		m.id mid, m.name , m.spec, m.conversion,
+		y.dic_name unit ,
+	    p.id pid, p.purchase_row_no,p.material,p.main_Quantity , p.main_Price , p.amount , 
+	    b.id budget_plan_detail,b.budget_amount budgetAmount,
+	    (b.budget_amount-b.RESIDUAL_AMOUNT) budgetuse,
+	    o.name account
+		from B_MATERIAL_PURCHASE_HEAD h 	
+		INNER JOIN  B_MATERIAL_PURCHASE_DETAIL p ON h.ID=p.purchase_head_id
+    	INNER JOIN  b_budget_plan_detail b on p.budget_plan_detail = b.id
+    	INNER JOIN 	B_BUDGET_ACCOUNT o on b.account = o.id
+		INNER JOIN 	BASE_MATERIAL m on  m.id = p.material
+		INNER JOIN	sys_dictionary y on  m.unit = y.dic_code
+		INNER JOIN  SYS_USERINFO u on u.user_id = h.input_userid 
+		INNER JOIN  sys_company c on  c.company_id = h.centralized_department 		
+		<where>
+			p.PURCHASE_HEAD_ID = #{id}
+		</where>
+			order by purchase_row_no
+	</select>
+	
+	<!-- 修改单据状态 -->
+	<update id="updateState" parameterType="MaterialPurchaseHead">
+		update B_MATERIAL_PURCHASE_HEAD set state = '审批通过'   where ID=#{id} 
+	</update>
+	
+	<!-- 插入数据 -->
+	<insert id="insert" parameterType="MaterialPurchaseHead">
+	INSERT INTO B_MATERIAL_PURCHASE_HEAD
+	(id,purchase_no,state,centralized_department,input_date,purchase_time_limit,purchase_department,input_userid,contract_number,purchase_explain,purchase_type) 
+	VALUES
+	(#{id},#{purchase_no},#{state},#{centralized_department},#{input_date},#{purchase_time_limit},#{purchase_department},#{input_userid},#{contract_number},#{purchase_explain},#{purchase_type})
+	</insert>
+	
+	<!-- 根据部门id和输入日期查询最大的编码 -->
+	<select id="selectByDepartment" resultType="String">
+	select t.* from (select purchase_no from b_material_purchase_head order by purchase_no desc) t where rownum=1
+	</select>
+	
+	<!-- 更新主表(删除用) -->
+	<update id="update" parameterType="MaterialPurchaseHead">
+		UPDATE B_MATERIAL_PURCHASE_HEAD SET
+		purchase_time_limit = #{purchase_time_limit},
+		centralized_department = #{centralized_department},
+		purchase_department = #{purchase_department},
+		contract_number = #{contract_number},
+		purchase_explain = #{purchase_explain}
+		WHERE id = #{id}
+	</update>
+	
+</mapper>

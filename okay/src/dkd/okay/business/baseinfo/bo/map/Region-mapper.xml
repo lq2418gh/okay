@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Region">
+	<resultMap type="Region" id="regionMap">
+		<id column="region_id" property="regionId" />
+		<result column="warehouse_id" property="warehouseId" />
+		<result column="region_code" property="regionCode" />
+		<result column="region_name" property="regionName" />
+		<result column="state" property="state" />
+		<result column="area" property="area" />
+		<result column="remark" property="remark" />
+		<result column="isdel" property="isDel" />
+		<result column="name" property="warehouseName" />
+		<result column="code" property="warehouseCode" />
+	</resultMap>
+	<sql id="all"> 
+	  r.region_id,r.warehouse_id,r.region_code,r.region_name,r.state,r.area,r.remark
+	</sql>
+	<!-- 查询全部仓库信息 -->
+	<select id="selectAll" resultMap="regionMap" >
+		select <include refid="all"/> from base_region  r 
+		where r.isdel = 0  order by r.region_code asc 
+	</select>
+	<!-- 根据上级ID分页查询库区信息 -->
+	<select id="selectByCondition" resultMap="regionMap" parameterType="map">
+	select * from (
+		select r.*,ROW_NUMBER() OVER (order by region_code)  rn  
+		from base_region  r  where r.isdel = 0 
+		<if test="warehouseId != null and warehouseId != '' ">
+			and r.warehouse_id = #{warehouseId}
+		</if> 
+		<if test="region.regionName != null and region.regionName != ''"> and  r.region_name like '%' || #{region.regionName} || '%' </if>
+		<if test="region.regionCode != null and region.regionCode != ''"> and r.region_code like '%' || #{region.regionCode} || '%'</if>
+		<if test="region.state != null and region.state != ''"> and r.state = #{region.state}</if>
+		)s
+		<if test="page!= null">
+			where s.rn 
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+		order by region_code asc
+	</select>
+	<!-- 根据上级ID查询库区信息数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from base_region   r where r.isdel = 0 
+		<if test="region.regionName != null and region.regionName != '' "> and  r.region_name like '%' || #{region.regionName} || '%' </if>
+		<if test="region.regionCode != null and region.regionCode != '' "> and r.region_code like '%' || #{region.regionCode} || '%'</if>
+		<if test="region.state != null and region.state != ''"> and r.state = #{region.state}</if>
+		<if test='warehouseId != null and warehouseId != "" '>
+			and r.warehouse_id = #{warehouseId}
+		</if>
+	</select>
+	<!-- 根据ID查询库区信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="regionMap">
+		SELECT 	<include refid="all" /> ,w.warehouse_name ,w.warehouse_code 
+		from base_region   r  inner join base_warehouse  w on r.warehouse_id = w.warehouse_id
+		where r.region_id = #{regionId}
+	</select>
+	<!-- 新增库区信息 -->
+	<insert id="insert" parameterType="Region" >
+		insert into base_region  
+		(region_id,warehouse_id,region_code,region_name,state,area,remark)
+		 VALUES
+		(#{regionId},#{warehouseId},#{regionCode},#{regionName},#{state},#{area},#{remark})
+	</insert>
+	<!-- 更新库区信息 -->
+	<update id="update" parameterType="Region">
+		update base_region set  
+		region_name = #{regionName}, 
+		state = #{state},
+		area = #{area},
+		remark = #{remark}
+		where region_id = #{regionId} 
+	</update>
+	<!-- 删除库区信息 -->
+	<update id="delete" parameterType="String">
+		update base_region set
+		isdel=1 
+		where region_id = #{regionId}
+	</update>
+	<!-- 判断数据库中库区编码是否存在  -->
+	<select id="selectRegionRepeat" resultType="int" parameterType="String" >
+		select count(*) from base_region  m where  m.isdel = 0  and m.region_code = #{regionCode} 
+	</select>
+		<!-- 判断数据库中库区名称是否存在  -->
+	<select id="selectRegionNameRepeat" resultType="int" parameterType="map" >
+		select count(*) from base_region  m where  m.isdel = 0  and m.region_name = #{regionName}  
+		    <if test="regionId != null and regionId !='' ">and m.region_id!=#{regionId} </if>
+		    and m.warehouse_id=#{warehouseId}
+	</select>
+	<!-- 根据仓库状态改变库区状态  -->
+	<select id="selectByWarehouseId" resultMap="regionMap" parameterType="String" >
+		select * from base_region  m where  m.isdel = 0  and m.warehouse_id=#{warehouseId}
+	</select>
+</mapper>

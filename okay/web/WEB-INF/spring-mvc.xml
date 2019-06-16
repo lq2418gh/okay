@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p" 
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:cache="http://www.springframework.org/schema/cache" 
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:task="http://www.springframework.org/schema/task" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+						http://www.springframework.org/schema/mvc 
+						http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd 
+						http://www.springframework.org/schema/context 
+						http://www.springframework.org/schema/context/spring-context-3.0.xsd 
+						http://www.springframework.org/schema/aop 
+						http://www.springframework.org/schema/aop/spring-aop-3.0.xsd 
+						http://www.springframework.org/schema/tx 
+						http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+						http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-3.1.xsd
+						http://www.springframework.org/schema/security 
+						http://www.springframework.org/schema/security/spring-security-3.1.xsd
+						 http://www.springframework.org/schema/task 
+                        http://www.springframework.org/schema/task/spring-task-3.1.xsd  ">	
+<!-- security注解 -->
+	<security:global-method-security pre-post-annotations="enabled" secured-annotations="enabled" 
+	jsr250-annotations="enabled" proxy-target-class="true" />   
+<!-- 注解驱动 -->
+	<mvc:annotation-driven/>
+<!-- 组件扫描 context:exclude-filter是因为controller会先进行扫描装配，此时service还没有被事物注解加强-->
+	<context:component-scan base-package="dkd.okay" >	
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+	</context:component-scan>	
+<!-- 视图解析器 -->
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!-- 前缀 /WEB-INF/jsp/home.jsp-->
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<!-- 后缀 -->
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="1" />
+	</bean>
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="webBindingInitializer">  
+		    <bean class="org.springframework.web.bind.support.ConfigurableWebBindingInitializer">  
+		        <property name="conversionService">  
+		            <bean class="org.springframework.format.support.FormattingConversionServiceFactoryBean"></bean>  
+		        </property>  
+		    </bean>  
+		</property>
+	</bean>
+<!-- 配置自定义拦截器 -->
+	<mvc:interceptors>
+		<!-- 国际化拦截器 -->
+		<bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor" />
+		<!-- 会话无缓存 -->
+		<bean class="org.springframework.web.servlet.mvc.WebContentInterceptor" p:cacheSeconds="0" />
+	</mvc:interceptors>
+<!-- spring缓存控制器 结合ehcache使用-->
+	<cache:annotation-driven cache-manager="cacheManager"/>   
+	<bean id="cacheManagerFactory" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean" p:configLocation="/WEB-INF/ehcache-config.xml" />    
+	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager" p:cacheManager-ref="cacheManagerFactory" />
+
+<!-- SpringMVC上传文件时，需要配置MultipartResolver处理器 --> 
+     <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"> 
+         <!-- 指定所上传文件的总大小不能超过200KB。注意maxUploadSize属性的限制不是针对单个文件，而是所有文件的容量之和 --> 
+         <property name="maxUploadSize" value="30000000"/> 
+         <property name="resolveLazily" value="true"/>    
+     </bean>
+<!-- SpringMVC在超出上传文件限制时，会抛出org.springframework.web.multipart.MaxUploadSizeExceededException --> 
+<!-- 该异常是SpringMVC在检查上传的文件信息时抛出来的，而且此时还没有进入到Controller方法中 --> 
+     <bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver"> 
+         <property name="exceptionMappings"> 
+             <props> 
+                 <!-- 遇到MaxUploadSizeExceededException异常时，自动跳转到/WEB-INF/jsp/error_fileupload.jsp页面  -->
+                 <prop key="org.springframework.web.multipart.MaxUploadSizeExceededException">common/fileUpload</prop> 
+             </props> 
+         </property> 
+     </bean> 
+<!-- 国际化 --> 
+ 	<bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:messages" />  
+	</bean>
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver" />
+    <!-- 定时任务 -->
+    <task:annotation-driven/> 
+</beans>

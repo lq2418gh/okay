@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ProcessRecord">
+	<resultMap type="ProcessRecord" id="ProcessRecordMap">
+		<id column="record_id" property="record_id"/>
+		<result column="fk_record_id" property="fk_record_id"/>
+		<result column="work_no" property="work_no"/>
+		<result column="process_id" property="process_id"/>
+		<result column="process_name" property="process_name"/>
+		<result column="order_no" property="order_no"/>
+		<result column="role_id" property="role_id"/>
+		<result column="user_id" property="user_id"/>
+		<result column="INPUT_DATE" property="INPUT_DATE"/>
+		<result column="CHECK_TIME" property="CHECK_TIME"/>
+		<result column="CHECK_USERID" property="CHECK_USERID"/>
+		<result column="CHECK_USERNAME" property="CHECK_USERNAME"/>
+		<result column="CHECK_DEPTID" property="CHECK_DEPTID"/>
+		<result column="CHECK_DEPTNAME" property="CHECK_DEPTNAME"/>
+		<result column="CHECK_SUGGESTION" property="CHECK_SUGGESTION"/>
+		<result column="CHECK_RESULT" property="CHECK_RESULT"/>
+		<result column="sign_image" property="sign_image"/>
+		<result column="flow_sign" property="flow_sign"/>
+		<result column="work_type" property="workType"/>
+	</resultMap>
+	<resultMap type="WaitTask" id="WaitTaskMap">
+		<result column="work_no" property="work_no"/>
+		<result column="STATE" property="STATE" />
+		<result column="record_code" property="record_code"/>
+		<result column="INPUT_USERID" property="INPUT_USERID" />
+	</resultMap>
+	<insert id="insert" parameterType="ProcessRecord">
+		insert into sys_work_process_record (
+			record_id,fk_record_id,work_no,process_id,process_name,order_no,role_id,user_id,INPUT_DATE,flow_sign,check_result
+		) values (
+			#{record_id},#{fk_record_id},#{work_no},#{process_id},#{process_name},#{order_no},#{role_id},#{user_id},
+			#{INPUT_DATE},#{flow_sign},'待审核'
+		)
+	</insert> 
+	<select id="selectByWorkNo" resultMap="ProcessRecordMap" parameterType="string">
+		select  * from sys_work_process_record  wpr where wpr.CHECK_RESULT = '待审核' 
+		and wpr.work_no = #{work_no} and rownum=1
+		order by wpr.order_no
+	</select>
+	<select id="selectByWorkno" resultMap="ProcessRecordMap" parameterType="string">
+		select * from sys_work_process_record  wpr where wpr.CHECK_RESULT != '待审核' and wpr.work_no = #{work_no}
+		order by wpr.check_time
+	</select>
+	
+	<select id="selectByWorkNoFkRecordId" resultMap="ProcessRecordMap" parameterType="string">
+	
+	select * from sys_work_process_record b where INPUT_DATE = 
+		(select a.INPUT_DATE from sys_work_process_record a where 
+		a.fk_record_id = #{fk_record_id} 
+		and a.work_no = #{work_no} 
+		and CHECK_RESULT != '待审核' and rownum=1
+		order by a.INPUT_DATE desc )
+		and b.fk_record_id = #{fk_record_id} 
+		and b.work_no = #{work_no} 
+		and b.CHECK_RESULT != '待审核' 
+		order by b.check_time 
+	</select>
+	<update id="update" parameterType="ProcessRecord">
+		update sys_work_process_record 
+		<set>   
+			<if test="CHECK_TIME!= null">CHECK_TIME = #{CHECK_TIME},</if>
+			<if test="CHECK_USERID!= null">CHECK_USERID = #{CHECK_USERID},</if>
+			<if test="CHECK_USERNAME!= null ">CHECK_USERNAME = #{CHECK_USERNAME},</if>
+			<if test="CHECK_DEPTID!= null ">CHECK_DEPTID = #{CHECK_DEPTID},</if>
+			<if test="CHECK_DEPTNAME!= null ">CHECK_DEPTNAME = #{CHECK_DEPTNAME},</if>
+			<if test="CHECK_SUGGESTION!= null ">CHECK_SUGGESTION = #{CHECK_SUGGESTION},</if>
+			<if test="CHECK_RESULT!= null ">CHECK_RESULT = #{CHECK_RESULT},</if>
+			<if test="sign_image!= null ">sign_image = #{sign_image}</if>
+		</set>
+		where record_id = #{record_id}
+	</update>
+	<delete id="delete" parameterType="string">	
+		delete from sys_work_process_record where CHECK_RESULT = '待审核' and work_no = #{work_no}
+	</delete>
+	
+	<!-- ***************************************待办任务发送邮件***************************************** -->
+	<select id="selectWaitTaskByContract" parameterType="String" resultMap="WaitTaskMap">
+	select * from (SELECT ch.STATE,ch.INPUT_USERID,fh.record_code,wpr.work_no,
+		ROW_NUMBER() OVER( PARTITION BY fh.record_code  order by wpr.order_no ) as row_Num 
+		FROM sys_work_process_record wpr inner JOIN sys_flowset_head  fh 
+		on wpr.fk_record_id = fh.record_id 
+    inner join T_CONTRACT_HEAD  ch on wpr.work_no=ch.CONTRACT_NO
+		WHERE wpr.work_no=#{work_no}
+	)
+		 a 
+		<![CDATA[  WHERE a.row_Num <= 1  ]]>
+	</select>
+	<select id="selectWaitTaskByInvite" parameterType="String" resultMap="WaitTaskMap">
+	select * from (SELECT ph.STATE,fh.record_code,wpr.work_no,
+		ROW_NUMBER() OVER( PARTITION BY fh.record_code  order by wpr.order_no ) as row_Num 
+		FROM sys_work_process_record  wpr inner JOIN sys_flowset_head fh 
+		on wpr.fk_record_id = fh.record_id 
+    inner join T_PURCHASEINVITE_HEAD ph on wpr.work_no=ph.INVITE_NO
+		WHERE wpr.work_no=#{work_no}
+	)
+		 a 
+		<![CDATA[ WHERE a.row_Num <= 1  ]]>
+	</select>
+	<select id="selectWaitTaskByNobid" parameterType="String" resultMap="WaitTaskMap">
+	select * from (SELECT ph.STATE,fh.record_code,wpr.work_no,
+		ROW_NUMBER() OVER( PARTITION BY fh.record_code  order by wpr.order_no ) as row_Num 
+		FROM sys_work_process_record wpr inner JOIN sys_flowset_head fh 
+		on wpr.fk_record_id = fh.record_id 
+    inner join T_PURCHASENOBID_HEAD ph on wpr.work_no=ph.INVITE_NO
+		WHERE wpr.work_no=#{work_no}
+	)
+	 a 
+		<![CDATA[ WHERE a.row_Num <= 1 ]]>
+	</select>
+	<select id="selectflowByWaitTask"  parameterType="String" resultMap="ProcessRecordMap">
+	select wpr.* FROM sys_work_process_record wpr, sys_flowset_head fh 
+		where wpr.fk_record_id=fh.record_id 
+			and fh.record_code=#{record_code} and rownum=1
+			and wpr.order_no in 
+			(select min(wpr.order_no) FROM sys_work_process_record wpr, sys_flowset_head fh 
+				where wpr.fk_record_id=fh.record_id and fh.record_code=#{record_code})
+	</select>
+	<!-- ****************************************待审任务发送邮件**************************************** -->
+	<select id="selectflowByWorkNo" resultMap="ProcessRecordMap">
+	SELECT process.*, flow.work_type  FROM sys_work_process_record process 
+	INNER JOIN sys_flowset_head flow 
+		ON process.fk_record_id=flow.record_id
+	<where>
+		process.CHECK_RESULT = '待审核' and process.work_no = #{work_no} and rownum=1
+	</where>
+	order by process.order_no
+	</select>	
+	
+	<!-- ***********************************供应商查询年审，黑名单，不合格时间********************************** -->
+	<select id="selectflowBySupplierId" parameterType="map" resultType="string">
+	SELECT top 1 process.check_time  FROM sys_work_process_record process  INNER JOIN
+	sys_flowset_head flow ON process.fk_record_id=flow.record_id
+  	where process.CHECK_RESULT != '待审核' and process.work_no = #{work_no} 
+  	and flow.record_code in
+			<foreach collection="record_codeList" index="index" item="item" open="("    separator="," close=")">
+   			#{item}
+  		</foreach>
+ 	order by process.check_time desc
+	</select>
+	<delete id="deleteProcessRecord" parameterType="string">
+		delete sys_work_process_record where work_no=#{workNo}
+	</delete>
+	<!-- update sys_work_process_record 
+		set CHECK_TIME = null,CHECK_USERID = null,CHECK_USERNAME = null,
+			CHECK_DEPTID = null,CHECK_DEPTNAME = null,
+			CHECK_SUGGESTION = null,CHECK_RESULT = '待审核',sign_image = null
+		where work_no=#{workNo} and fk_record_id='0cb92d3d91f44ec5bc009328257ad52b'
+		AND YEAR(INPUT_DATE)=YEAR(GETDATE())  -->
+	<update id="initByYearCheck" parameterType="string">
+		delete sys_work_process_record 
+		where work_no=#{workNo} and fk_record_id='0cb92d3d91f44ec5bc009328257ad52b'
+		AND YEAR(INPUT_DATE)=YEAR(GETDATE()) 
+	</update>
+	<select id="checkByYear" parameterType="string" resultType="int">
+		select count(1) from sys_work_process_record
+		where work_no=#{workNo} and fk_record_id='0cb92d3d91f44ec5bc009328257ad52b'
+		and CHECK_RESULT != '待审核' AND YEAR(INPUT_DATE)=YEAR(GETDATE()) 
+	</select>
+	<select id="countByNoInit" resultType="int" parameterType="string">
+		select count(1) from sys_work_process_record wpr where wpr.CHECK_RESULT = '审核通过' and wpr.work_no = #{work_no}
+	</select>
+</mapper>

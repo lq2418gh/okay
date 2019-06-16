@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SupplierCapacity">
+	<resultMap type="SupplierCapacity" id="supplierCapacityMap">
+		<id column="ID" property="id"/>
+		<result column="supplier_id" property="supplier_id"/>
+		<result column="materiel_id" property="materiel_id"/>
+		<result column="price" property="price"/>
+		<association property="material" column="materiel_id" javaType="Material">
+			<id column="id" property="id" />
+			<result column="code" property="code" />
+			<result column="name" property="name" />
+			<result column="unit" property="unit" />
+			<result column="spec" property="spec" /><!-- 规格型号 -->
+			<result column="explain" property="explain" /><!-- 说明 -->
+		</association>
+	</resultMap>
+	
+	<sql id="all">
+		a.id,a.supplier_id,a.materiel_id,a.price
+	</sql>
+	<!-- 统计条件查询数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(a.id) from b_supplier_capacity a ,base_material b where 1=1 and a.materiel_id = b.id
+			and a.supplier_id = #{supplier_id}
+		<if test="wzcode != null and wzcode != ''">
+			 and b.code like '%' || #{wzcode} || '%' 
+		</if>
+		<if test="wzname != null and wzname != ''">
+			 and b.name like '%' ||  #{wzname} || '%' 
+		</if>
+	</select>
+	<!-- 分页查询 -->
+	<select id="selectByCondition" resultMap="supplierCapacityMap" parameterType="map">
+	select * from (
+		select a.*,b.code,b.name,c.dic_name unit,b.spec,b.explain, ROW_NUMBER() OVER (order by b.name ) r 
+		from b_supplier_capacity a 
+		left join base_material b on a.materiel_id = b.id
+		left join sys_dictionary c on  b.unit = c.dic_code
+		where 1=1 and a.materiel_id = b.id and a.supplier_id = #{supplier_id}
+			<if test="wzname != null and wzname != ''">
+			 	and b.name like '%' || #{wzname} || '%' </if>
+			<if test="wzcode != null and wzcode != ''">
+				and b.code like '%' || #{wzcode} || '%'
+			</if>
+		)s
+		<if test="page!= null">
+			where s.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	</select>
+	
+	
+	<!-- 根据供应商id查找产能说明 -->
+	<select id="getSupplierCapacity" resultMap="supplierCapacityMap" parameterType="String">
+		select <include refid="all"/> ,b.code,b.name,c.dic_name unit,b.spec,b.explain 
+		from b_supplier_capacity a 
+		left join base_material b on a.supplier_id = #{supplierId} 
+		left join sys_dictionary c on  b.unit = c.dic_code
+		<where>
+			 and a.materiel_id = b.id
+		</where>
+	</select>
+	
+	<insert id="insert">
+		insert into b_supplier_capacity 
+		(id,supplier_id,materiel_id,price)
+		VALUES 
+		(#{id},#{supplier_id},#{materiel_id},#{price}
+		)
+	</insert>
+	
+	<update id="update">
+	  update b_supplier_capacity
+	  set
+	        supplier_id = #{supplier_id},
+			materiel_id = #{materiel_id},
+			price = #{price}
+			where id = #{id}
+	</update>
+	
+	<delete id="delete" parameterType="String">
+        delete from b_supplier_capacity where supplier_id=#{supplierId}
+    </delete>
+    
+    <select id="viewSupplierCapacity" parameterType="map" resultMap="supplierCapacityMap" >
+    	select * from b_supplier_capacity 
+    	<where>
+    		 supplier_id=#{supplierId}
+	    	 <if test="mids != null"> 
+				and materiel_id in 
+				<foreach collection="mids" index="index" item="mid" open="("  separator="," close=")">
+	   				#{mid}
+	  			</foreach>
+  			</if>
+  		</where>
+    </select>
+    
+    <select id="compareSupplierCapacity" parameterType="map" resultMap="supplierCapacityMap">
+    	select * from b_supplier_capacity 
+    	<where>
+    		 materiel_id=#{materialId}
+	    	 <if test="supIds != null"> 
+				and supplier_id in 
+				<foreach collection="supIds" index="index" item="sup" open="("  separator="," close=")">
+					#{sup}
+	  			</foreach>
+  			</if>
+  		</where>
+    </select>
+    
+    <select id="findSMid" parameterType="String" resultType="SupplierCapacity"> 
+    	select materiel_id from b_supplier_capacity 
+    	<where>
+    		supplier_id=#{supplierId}
+    	</where>
+    </select>
+    <select id="findMids" parameterType="String" resultType="SupplierCapacity"> 
+    	select supplier_id from b_supplier_capacity 
+    	<where>
+    		materiel_id=#{materialId}
+    	</where>
+    </select>
+    <!--  -->
+    <select id="findCanpacityBySupplierIdandMaterialId" parameterType="map" resultMap="supplierCapacityMap"> 
+    	select id,supplier_id,materiel_id,price from b_supplier_capacity 
+    	<where>
+    		supplier_id = #{supplier_id} and materiel_id = #{material_id}
+    	</where>
+    </select>
+    
+</mapper>

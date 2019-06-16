@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TenderFrameHead">
+
+	 <resultMap type="TenderFrameHead" id="tenderFrameHeadMap">
+		<id column="id" property="id" />
+		<result column="tender_no" property="tender_no" />
+		<result column="release_date" property="release_date" />
+		<result column="open_date" property="open_date" />
+		<result column="state" property="state" />
+		<result column="open_place" property="open_place" />
+		<result column="big_supplier" property="big_supplier" />
+		<result column="remark" property="remark" />
+		<result column="big_supplier_name" property="big_supplier_name" />
+	</resultMap>
+	<!-- 查看使用 -->
+	<resultMap type="TenderFrameHead" id="tenderFrameHeadsMap">
+		<id column="id" property="id" />
+		<result column="tender_no" property="tender_no" />
+		<result column="release_date" property="release_date" />
+		<result column="open_date" property="open_date" />
+		<result column="state" property="state" />
+		<result column="open_place" property="open_place" />
+		<result column="big_supplier" property="big_supplier" />
+		<result column="remark" property="remark" />
+		<result column="big_supplier_name" property="big_supplier_name" />
+		<collection property="tenderFrameDetailList" ofType="TenderFrameDetail">
+			<id column="tdid" property="id" />
+			<result column="tenderFrameDetail_row_no" property="tenderFrameDetail_row_no" />
+			<result column="tender_frames" property="tender_frame" />
+			<result column="material" property="material" />
+			<result column="main_Price" property="main_Price" />
+			<result column="secondary_Price" property="secondary_Price" />
+			<result column="name" property="name" />
+			<result column="code" property="code" />
+			<result column="unit" property="unit" />
+			<result column="spec" property="spec" />
+			<result column="explain" property="explain" />
+		</collection>
+		<collection property="tenderFrameSupplierList" ofType="TenderFrameSupplier">
+			<id column="tsid" property="id" />
+			<result column="tender_framess" property="tender_frame" />
+			<result column="supplier" property="supplier" />
+			<result column="email" property="email" />
+			<result column="supplier_name" property="supplier_name" />
+		</collection>
+	</resultMap>
+	<!-- 生成框架协议使用 -->
+	<resultMap type="TenderFrameHead" id="tenderFrameHeadssMap">
+		<id column="id" property="id" />
+		<result column="big_supplier" property="big_supplier" />
+		<result column="big_supplier_name" property="big_supplier_name" />
+		<result column="email" property="email" />
+		<result column="opening_bank" property="opening_bank" />
+		<result column="legal_person" property="legal_person" />
+		<result column="tel" property="tel" />
+		<result column="linkman" property="linkman" />
+		<result column="bank_account_number" property="bank_account_number" />
+		<collection property="tenderFrameDetailList" ofType="TenderFrameDetail">
+			<id column="tdid" property="id" />
+			<result column="tenderFrameDetail_row_no" property="tenderFrameDetail_row_no" />
+			<result column="tender_frames" property="tender_frame" />
+			<result column="material" property="material" />
+			<result column="main_Price" property="main_Price" />
+			<result column="secondary_Price" property="secondary_Price" />
+			<result column="name" property="name" />
+			<result column="code" property="code" />
+			<result column="unit" property="unit" />
+			<result column="spec" property="spec" />
+			<result column="conversion" property="conversion" />
+		</collection>
+	</resultMap>
+	
+	<sql id="all">t.id,t.tender_no,t.release_date,t.open_date,t.state,t.open_place,t.big_supplier,t.remark</sql>
+	
+	<!-- 分页模糊查询 -->
+	<select id="selectByCondition" resultMap="tenderFrameHeadMap" parameterType="map">
+		select * from (
+		select t.*,s.supplier_name big_supplier_name,ROW_NUMBER() OVER (order by tender_no ) r 
+		from  B_TENDER_FRAME_HEAD t
+		left join BASE_SUPPLIER s on t.big_supplier=s.id 
+		<where>
+			<if test="tenderFrameHead.tender_no != null and tenderFrameHead.tender_no != ''">and t.tender_no like '%' || #{tenderFrameHead.tender_no} || '%'</if>
+			<if test="tenderFrameHead.state != null and tenderFrameHead.state != ''">and  t.state= #{tenderFrameHead.state}</if>
+			<if test="tenderFrameHead.big_supplier_name != null and tenderFrameHead.big_supplier_name != ''"> and s.supplier_name like '%' || #{tenderFrameHead.big_supplier_name} || '%'</if>
+			<if test="tenderFrameHead.release_date_begin != null and tenderFrameHead.release_date_begin != ''"> and t.release_date &gt;=to_date(#{tenderFrameHead.release_date_begin},'yyyy-mm-dd')</if>
+			<if test="tenderFrameHead.release_date_end != null and tenderFrameHead.release_date_end != ''"> and t.release_date &lt;=to_date(#{tenderFrameHead.release_date_end},'yyyy-mm-dd')</if>
+			<if test="tenderFrameHead.open_date_begin != null and tenderFrameHead.open_date_begin != ''"> and t.open_date &gt;=to_date(#{tenderFrameHead.open_date_begin},'yyyy-mm-dd') </if>
+			<if test="tenderFrameHead.open_date_end != null and tenderFrameHead.open_date_end != ''"> and t.open_date &lt;=to_date(#{tenderFrameHead.open_date_end},'yyyy-mm-dd') </if>
+		</where>
+		)s
+		<if test="page!= null">
+			where s.r
+			between (#{page.totalCount}-#{page.pageNow}*#{page.pageSize}+1)
+			and (#{page.totalCount}-(#{page.pageNow}-1)*#{page.pageSize})
+		</if>
+		order by tender_no desc 
+	</select>
+	
+	<!-- 查询记录数 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from B_TENDER_FRAME_HEAD t
+		left join BASE_SUPPLIER s on t.big_supplier=s.id 
+		<where>
+			<if test="tenderFrameHead.tender_no != null and tenderFrameHead.tender_no != ''">and t.tender_no like '%' || #{tenderFrameHead.tender_no}  || '%'</if>
+			<if test="tenderFrameHead.state != null and tenderFrameHead.state != ''">and  t.state= #{tenderFrameHead.state}</if>
+			<if test="tenderFrameHead.big_supplier_name != null and tenderFrameHead.big_supplier_name != ''"> and s.supplier_name like '%' || #{tenderFrameHead.big_supplier_name} || '%'</if>
+			<if test="tenderFrameHead.release_date_begin != null and tenderFrameHead.release_date_begin != ''"> and t.release_date &gt;=to_date(#{tenderFrameHead.release_date_begin},'yyyy-mm-dd')</if>
+			<if test="tenderFrameHead.release_date_end != null and tenderFrameHead.release_date_end != ''"> and t.release_date &lt;=to_date(#{tenderFrameHead.release_date_end},'yyyy-mm-dd')</if>
+			<if test="tenderFrameHead.open_date_begin != null and tenderFrameHead.open_date_begin != ''"> and t.open_date &gt;=to_date(#{tenderFrameHead.open_date_begin},'yyyy-mm-dd') </if>
+			<if test="tenderFrameHead.open_date_end != null and tenderFrameHead.open_date_end != ''"> and t.open_date &lt;=to_date(#{tenderFrameHead.open_date_end},'yyyy-mm-dd') </if>
+		</where>
+	</select>	
+	
+	<!-- 查看  -->
+	<select id="view" parameterType="String" resultMap="tenderFrameHeadsMap">
+		select t.*,
+		td.id tdid,td.tenderFrameDetail_row_no,td.tender_frame tender_frames,td.material,td.main_Price,td.secondary_Price,m.code,m.name,m.spec,m.explain,y.dic_name unit,
+		ts.id tsid,ts.supplier,s.supplier_name,ts.email
+		from B_TENDER_FRAME_HEAD t 
+		inner join B_TENDER_FRAME_DETAIL td on t.id=td.TENDER_FRAME
+		inner join B_TENDER_FRAME_SUPPLIER ts on t.id=ts.TENDER_FRAME
+		inner join BASE_SUPPLIER s on s.id=ts.supplier
+		inner join BASE_MATERIAL m on  m.id = td.material
+		inner join sys_dictionary y on  m.unit = y.dic_code
+		<where>
+			t.id = #{id}
+		</where>
+			order by td.tenderFrameDetail_row_no
+	</select>
+	
+	<!-- 到寻查询招标编码 -->
+	<select id="selectTender_no"  resultType="String">
+	select t.* from (select tender_no from B_TENDER_FRAME_HEAD order by tender_no desc) t where rownum=1  
+	</select>
+	
+	<insert id="insert" parameterType="TenderFrameHead">
+		INSERT INTO b_tender_frame_head
+		(id,tender_no,release_date,open_date,state,open_place,big_supplier,remark) 
+		VALUES
+		(#{id},#{tender_no},#{release_date},#{open_date},#{state},#{open_place},#{big_supplier},#{remark})
+	</insert>
+	<!--更新  -->
+	<update id="update" parameterType="TenderFrameHead">
+		update b_tender_frame_head set tender_no = #{tender_no} ,release_date = #{release_date} ,
+		open_date=#{open_date} ,state=#{state},open_place=#{open_place},big_supplier=#{big_supplier},remark=#{remark}
+		where ID=#{id}
+	</update>
+	
+	<!-- 修改单据状态为发布 -->
+	<update id="updateTenderFrameHead" parameterType="MaterialPurchaseHead">
+		update B_TENDER_FRAME_HEAD set state = '发布'
+		where id=#{id} 
+	</update>
+	<!-- 废标 -->
+	<update id="cancel" parameterType="MaterialPurchaseHead">
+		update B_TENDER_FRAME_HEAD set state = '废标'
+		where id=#{id} 
+	</update>
+	<!-- 设置中标供应商id -->
+	<update id="updateSupplier" parameterType="map">
+		update B_TENDER_FRAME_HEAD set big_supplier = #{supplier},state='中标'
+		where id=#{id} 
+	</update>
+	<!-- 生成框架协议 -->
+	<select id="show" parameterType="String" resultMap="tenderFrameHeadssMap">
+		select t.id,t.big_supplier,s.bank_account_number,s.supplier_name big_supplier_name,s.email,s.opening_bank,s.legal_person,s.tel,s.linkman,
+   	    td.id tdid,td.tenderFrameDetail_row_no,td.main_price,td.secondary_price,m.id material,m.name,m.code,y.dic_name unit,m.conversion,m.spec
+		from b_tender_frame_head t 
+		inner join b_tender_frame_detail td on t.id=td.tender_frame
+		inner join base_supplier s on s.id=t.big_supplier
+		inner join base_material m on  m.id = td.material
+		inner join sys_dictionary y on  m.unit = y.dic_code
+		where t.id=#{id} 
+	</select>
+</mapper>

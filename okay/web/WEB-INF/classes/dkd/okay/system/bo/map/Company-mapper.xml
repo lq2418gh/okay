@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Company">
+	<resultMap type="Company" id="companyMap">
+		<id column="company_id" property="companyId"/>
+		<result column="company_code" property="companyCode"/>
+		<result column="company_name" property="companyName"/>
+		<result column="company_type" property="companyType"/>
+		<result column="parentId" property="parentId"/>
+		<result column="levels" property="levels"/>
+		<result column="isDel" property="isDel"/>
+		<result column="remark" property="remark"/>
+		<result column="company_district" property="companyDistrict"/>
+		<result column="company_address" property="companyAddress"/>
+		<result column="company_contact" property="companyContact"/>
+		<result column="company_tel" property="companyTel"/>
+		
+		
+		
+		<result column="parentName" property="parentName"/>
+	</resultMap>
+	<!-- 全部字段-->
+	<sql id="all"> c.company_id,c.company_code,c.company_name,c.company_type,c.parentId,c.levels,c.isDel,c.remark
+	,c.company_district,c.company_address,c.company_contact,c.company_tel </sql>
+	<!-- 查询全部部门信息 -->
+	<select id="selectAll" resultMap="companyMap" >
+		select <include refid="all"/> from sys_company  c  
+		where c.isdel = 0 ORDER BY company_code ,company_type DESC 
+	</select>
+	<!-- 查询部门信息 -->
+	<select id="selectCompanyRepeat" resultType="int" parameterType="map" >
+		select count(*) from sys_company  c where  c.isDel = 0  and c.levels = #{levels}
+		<if test="companyCode != null">
+			and c.company_code = #{companyCode} 
+		</if>
+		<if test="companyName != null">
+			and c.company_name = #{companyName} 
+		</if>
+	</select>
+	<!-- 查询部门下的用户数量 -->
+	<select id="selectUserRepeat" resultType="int" parameterType="string" >
+		select count(ui.company_id)  from sys_userinfo  ui inner join sys_user  u on u.user_id = ui.user_id   
+		where  u.isdel = 0 and ui.company_id = #{companyId}
+	</select>
+	<!-- 查询全部部门信息 -->
+	<select id="selectByPk" resultMap="companyMap" parameterType="string">
+		select <include refid="all"/> ,nvl(cc.company_name,'公司部门根节点') as parentName 
+		from sys_company  c left outer join sys_company  cc on c.parentId = cc.company_id   
+		where c.isdel = 0 and c.company_id = #{companyId} 
+	</select>
+	<!-- 根据上级ID分页查询部门信息 -->
+	<select id="selectCompanyByParentId" resultMap="companyMap" parameterType="map">
+	select * from (
+		select c.*,ROW_NUMBER() OVER (order by c.company_code) as r 
+		,nvl((select cc.company_name from sys_company cc where cc.company_id = c.parentId ),'公司根节点') as parentName
+		from sys_company  c  where c.parentId = #{parentId} and c.isDel = 0
+		)s
+		<if test="page!= null">
+			where s.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+		ORDER BY company_type DESC 
+	</select>
+	<!-- 根据上级ID查询部门信息数量 -->
+	<select id="countParam" resultType="int" parameterType="string">
+		select count(*) from sys_company  c where c.parentId = #{parentId} and c.isDel = 0
+	</select>
+	<!-- 新增部门 -->	
+	<insert id="insert" parameterType="Company" useGeneratedKeys="true">
+		insert into sys_company (
+			company_id,company_code,company_name,company_type,parentId,levels,isDel,remark,company_district,company_address,company_contact,company_tel 
+		) values (
+			#{companyId},#{companyCode},#{companyName},#{companyType},#{parentId},#{levels},#{isDel},#{remark},#{companyDistrict},#{companyAddress},#{companyContact},#{companyTel}
+		)
+	</insert>
+	<!-- 修改部门 -->
+	<update id="update" parameterType="Company">
+		update sys_company set 
+		<if test="companyName!= null">company_name = #{companyName}, </if>
+		<if test="companyType!= null">company_type = #{companyType}, </if>
+		<if test="isDel!= null">isDel = #{isDel}, </if>
+		<if test="remark!= null">remark = #{remark} ,</if>
+		<if test="companyDistrict !=  null">company_district = #{companyDistrict}, </if>
+		<if test="companyAddress !=  null">company_address = #{companyAddress}, </if>
+		<if test="companyContact !=  null">company_contact = #{companyContact}, </if>
+		<if test="companyTel != null">company_tel = #{companyTel}, </if>
+		company_id = #{companyId}
+		where company_id = #{companyId}
+	</update>
+	<!-- 删除部门-->
+	<update id="delete" parameterType="String">
+		update sys_company set isDel = 1 where company_id = #{companyId}
+	</update>
+	
+	<select id="selectByLevel" resultMap="companyMap" >
+		select * from sys_company  c  
+		where c.isdel = 0 and c.levels = 1 and c.company_type ='可用' ORDER BY company_code
+	</select>
+</mapper>

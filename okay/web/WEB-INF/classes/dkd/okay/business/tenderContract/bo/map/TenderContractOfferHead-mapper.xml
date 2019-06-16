@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TenderContractOfferHead">
+	<resultMap type="TenderContractOfferHead" id="tenderContractOfferHeadMap">
+		<id column="id" property="id" />
+		<result column="tender_contract" property="tender_contract" />
+		<result column="supplier" property="supplier" />
+		<result column="tender_contract_supplier" property="tender_contract_supplier" />
+		<result column="file_id" property="file_id" />
+	</resultMap>
+	<!-- 中标  -->
+	<resultMap type="TenderContractOfferHead" id="tenderContractOfferHeadsMap">
+		<id column="id" property="id" />
+		<result column="tender_contract" property="tender_contract" />
+		<result column="supplier" property="supplier" />
+		<result column="tender_contract_supplier" property="tender_contract_supplier" />
+		<result column="file_id" property="file_id" />
+		<collection property="tenderContractOfferDetailList" ofType="TenderContractOfferDetail">
+			<id column="tdid" property="id" />
+			<result column="tender_detail" property="tender_detail" />
+			<result column="contract_offer_head" property="contract_offer_head" />
+			<result column="material" property="material" />
+			<result column="main_Price" property="main_Price" />
+			<result column="secondary_Price" property="secondary_Price" />
+		</collection>
+	</resultMap>
+	
+	<!-- 中标  -->
+	<select id="selectMaterialAndPrice" parameterType="map" resultMap="tenderContractOfferHeadsMap">
+		select tfod.material,tfod.main_Price,tfod.secondary_Price,tfod.tender_detail
+		from b_tender_contract_offer_head tfoh
+		inner join b_tender_contract_offer_detail tfod on tfoh.id=tfod.contract_offer_head
+		where tender_contract=#{id} and supplier=#{supplier}
+	</select>
+	<!-- 插入主表 -->
+	<insert id="insert" parameterType="TenderContractOfferHead">
+		INSERT INTO b_tender_contract_offer_head
+		(id,tender_contract,supplier,tender_contract_supplier,file_id) 
+		VALUES
+		(#{id},#{tender_contract},#{supplier},#{tender_contract_supplier},#{file_id})
+	</insert>
+	<!-- 检查是否已经上传报价  -->
+	<select id="checkPrice" parameterType="String" resultMap="tenderContractOfferHeadMap">
+		select supplier from b_tender_contract_offer_head
+		where tender_contract=#{id}
+	</select>
+	<!-- 上传报价时检查是否是第一次上传报价  -->
+	<select id="selectByTenderAndSupplier" parameterType="map" resultMap="tenderContractOfferHeadMap">
+		select * from b_tender_contract_offer_head
+		where tender_contract=#{tender_contract} 
+		and supplier=#{supplier} 
+		and tender_contract_supplier=#{id} 
+	</select>
+	<!-- 上传报价时删除第一次上传的报价信息  -->
+	<delete id="deleteByTenderAndSupplier" parameterType="map">
+		delete from b_tender_contract_offer_head where tender_contract=#{tender_contract} and supplier=#{supplier} and tender_contract_supplier=#{id}
+	</delete>
+</mapper>

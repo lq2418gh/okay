@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="BudgetPlanDetail">
+	<resultMap type="PlanDetail" id="planDetailMap">
+	<id column="id" property="id" />
+    <result column="budget_head_id" property="budgetHeadId" />
+    <result column="account" property="account" />	
+    <result column="budget_amount" property="budgetAmount" />
+    <result column="residual_amount" property="residualAmount" />
+    <result column="residual_amount_storage" property="residualAmountStorage" />
+    <result column="remark" property="remark" />
+	</resultMap>
+	<sql id="all"> 
+	  b.id,b.budget_head_id,b.account,b.budget_amount,b.residual_amount,b.remark
+	</sql>
+	<!-- 根据主表id删除计划预算明细信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_budget_plan_detail  
+		where budget_head_id = #{budgetHeadId}
+	</delete>
+	<!-- 根据明细表id删除计划预算明细信息 -->
+	<delete id="deleteById" parameterType="String">
+		delete from b_budget_plan_detail  
+		where id = #{id}
+	</delete>
+	<!-- 新增计划预算明细信息 -->
+	<insert id="insert" parameterType="PlanDetail" >
+		insert into b_budget_plan_detail
+		(id,budget_head_id,account,budget_amount,residual_amount,residual_amount_storage,remark)
+		 VALUES
+		(#{id},#{budgetHeadId},#{account},#{budgetAmount},#{residualAmount},#{residualAmountStorage},#{remark})
+	</insert>
+	<!-- 根据ID查询计划预算明细信息 -->
+	<select id="SELECT_PLANDETAIL" resultMap="planDetailMap">
+		select 	b.*
+		from b_budget_plan_detail b    
+		where b.budget_head_id = #{budgetHeadId}
+	</select>
+	<!-- 根据部门好查询相关明细数据 -->
+	<select id="selectBPD" resultMap="planDetailMap">
+		select b.id,b.budget_amount,
+		(b.budget_amount-b.residual_amount) residual_amount,ba.name account 
+		from
+		(select bpd.* from b_budget_plan_detail bpd
+		where bpd.budget_head_id =#{id}
+		)b
+		inner join b_budget_account ba on ba.id=b.account
+	</select>
+	<!-- 判断数据是否引用了预算科目-->
+	<select id="countByAccount" resultType="int" parameterType="String" >
+		select count(*) from b_budget_plan_detail p  
+		where p.account =#{account} 
+	</select>
+	<!-- 更新科目预算剩余金额信息 -->
+	<update id="update" parameterType="PlanDetail">
+		update b_budget_plan_detail   set 
+		residual_amount = #{residualAmount}, 
+		residual_amount_storage = #{residualAmountStorage}
+		where id = #{id}
+	</update>
+	<!-- 根据ID查询计划预算信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="planDetailMap">
+		select 	* 
+		from b_budget_plan_detail  p    
+		where p.id = #{id}
+	</select>
+	
+	<resultMap type="PlanDetail" id="planDetailAllMap">
+		<id column="id" property="id" />
+	    <result column="company" property="company" />
+	    <result column="company_name" property="company_name" />	
+	    <result column="account" property="account" />
+	    <result column="accountName" property="accountName" />
+	</resultMap>
+	<!-- 根据ID查询计划预算信息 -->
+	<select id="selectPlanDetailByFrame" resultMap="planDetailAllMap">
+		select pd.id,ph.company ,c.company_name ,pd.account,ba.name accountName 
+		from b_budget_plan_detail pd 
+		inner join b_budget_plan_head ph on pd.budget_head_id = ph.id
+		inner join b_budget_account ba on ba.id = pd.account 
+		inner join sys_company c on c.company_id = ph.company
+		where ph.state='审批通过' and ph.year=to_char(sysdate, 'yyyy') 
+		order by ph.input_date
+	</select>
+</mapper>

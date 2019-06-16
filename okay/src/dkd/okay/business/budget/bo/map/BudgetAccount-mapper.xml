@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BudgetAccount">
+	<resultMap type="BudgetAccount" id="budgetAccountMap">
+	<id column="id" property="budgetAccountId" />
+    <result column="code" property="budgetAccountCode" />
+    <result column="name" property="name" />	
+    <result column="explain" property="explain" />
+    <result column="warning_ratio" property="warningRatio" />
+    <result column="isvalidate" property="isValidate" />
+	</resultMap>
+	
+	<sql id="all"> 
+	  a.id,a.code,a.name,a.explain,a.warning_ratio,a.isvalidate
+	</sql>
+	<!-- 查询全部预算科目信息 -->
+	<select id="selectAll" resultMap="budgetAccountMap" >
+		select <include refid="all"/> from b_budget_account  a 
+	</select>
+	<!-- 根据上级ID分页查询预算科目信息 -->
+	<select id="selectByCondition" resultMap="budgetAccountMap" parameterType="map">
+	select * from (
+		select a.*,ROW_NUMBER() OVER (order by name) rn  
+		from b_budget_account a  
+		<where>
+		<if test="budgetAccount.name != null and budgetAccount.name !='' "> and  a.name like '%' || #{budgetAccount.name} || '%' </if>
+		<if test="budgetAccount.isValidate != null and budgetAccount.isValidate != '' "> and a.isvalidate = #{budgetAccount.isValidate}</if>
+		</where>
+		)s
+		<if test="page!= null">
+			where s.rn 
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	</select>
+	<!-- 根据上级ID查询预算科目信息数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from b_budget_account a 
+		<where>
+		<if test="budgetAccount.name != null and budgetAccount.name !=''"> and a.name like '%' || #{budgetAccount.name} || '%' </if>
+		<if test="budgetAccount.isValidate != null and budgetAccount.isValidate != ''"> and a.isvalidate = #{budgetAccount.isValidate}</if>
+		</where>
+	</select>
+	<!-- 根据ID查询预算科目信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="budgetAccountMap">
+		select 	<include refid="all" />  
+		from b_budget_account a   
+		where a.id = #{budgetAccountId}
+	</select>
+	<!-- 新增科目预算信息 -->
+	<insert id="insert" parameterType="BudgetAccount" >
+		insert into b_budget_account 
+		(id,name,explain,warning_ratio,isvalidate,code)
+		 VALUES
+		(#{budgetAccountId},#{name},#{explain},#{warningRatio},#{isValidate},#{budgetAccountCode})
+	</insert>
+	<!-- 更新科目预算信息 -->
+	<update id="update" parameterType="BudgetAccount">
+		update b_budget_account  set 
+		name = #{name}, 
+		code = #{budgetAccountCode},
+		explain = #{explain}, 
+		warning_ratio=#{warningRatio},
+		isvalidate = #{isValidate}
+		where id = #{budgetAccountId}
+	</update>
+	<!-- 删除科目预算信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_budget_account  
+		where id = #{budgetAccountId}
+	</delete>
+	<!-- 判断数据库中预算科目名称是否存在  -->
+	<select id="selectNameRepeat" resultType="int" parameterType="String" >
+		select count(*) from b_budget_account  a where  a.name = #{name} 
+	</select>
+	<!-- 查询可用状态的预算科目信息 -->
+	<select id="SELECT_BUDGETACCOUNT" resultMap="budgetAccountMap" >
+		select <include refid="all"/> from b_budget_account  a 
+		where a.isvalidate = '使用'   
+	</select>
+</mapper>
+
+	
+   

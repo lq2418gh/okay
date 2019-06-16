@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PurchaseContractHead">
+	<resultMap type="PurchaseContractHead" id="purchaseContractHeadMap">
+	<id column="id" property="id" />
+	<result column="contract_no" property="contractNo" />
+	<result column="varieties" property="varieties" />
+	<result column="tender_contract" property="tenderContract" />
+	<result column="sign_date" property="signDate" />
+	<result column="effect_date" property="effectDate" />
+	<result column="expire_date" property="expireDate" />
+	<result column="extended_year" property="extendedYear" />
+	<result column="supplier" property="supplier" />
+	<result column="state" property="state" />
+	<result column="a_responsible_department" property="aResponsibleDepartment" />
+	<result column="b_responsible_department" property="bResponsibleDepartment" />
+	<result column="party_a_name" property="partyAName" />
+	<result column="party_a_chargeperson" property="partyAChargeperson" />
+	<result column="remark" property="remark" />
+	<result column="extended_expire_date" property="extendedExpireDate" />
+	<result column="bank_account_number" property="bank_account_number" />
+	<result column="purchase_no" property="purchase_no" />
+	<result column="materialsPurchaseId" property="materialsPurchaseId" />
+	<result column="linkman" property="linkman" />
+	<result column="tel" property="tel" />
+	<result column="supplierName" property="supplierName" />
+	<result column="opening_bank" property="opening_bank" />
+	<result column="legal_person" property="legal_person" />
+	<result column="email" property="email" />
+	<result column="yearMon" property="yearMon" />
+	<result column="address" property="address" />
+	<result column="fax" property="fax" />
+	</resultMap>
+	<!-- 根据分页查询框架协议信息 -->
+	<select id="selectByCondition" resultMap="purchaseContractHeadMap" parameterType="map">
+	   select * from(
+		select f.*,s.supplier_name supplierName,s.linkman,s.tel,s.address,s.fax,ROW_NUMBER() OVER (order by effect_date desc ) r
+		from b_purchase_contract_head f  
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="purchaseContractHead.contractNo != null and purchaseContractHead.contractNo !='' "> and  f.contract_no like '%' || #{purchaseContractHead.contractNo} || '%' </if>
+			<if test="purchaseContractHead.supplierName != null and purchaseContractHead.supplierName !='' "> and s.supplier_name like '%' || #{purchaseContractHead.supplierName} || '%'</if>
+			<if test="purchaseContractHead.state != null and purchaseContractHead.state !='' "> and  f.state = #{purchaseContractHead.state} </if>
+			<if test="purchaseContractHead.signStartDate != null and purchaseContractHead.signStartDate !='' "> and  f.sign_date &gt;=to_date(#{purchaseContractHead.signStartDate},'yyyy-mm-dd') </if>
+			<if test="purchaseContractHead.signEndDate != null and purchaseContractHead.signEndDate !='' "> and  f.sign_date &lt;=to_date(#{purchaseContractHead.signEndDate},'yyyy-mm-dd') </if>
+			<if test="purchaseContractHead.effectStartDate != null and purchaseContractHead.effectStartDate !='' "> and  f.effect_date &gt;=to_date(#{purchaseContractHead.effectStartDate},'yyyy-mm-dd') </if>
+			<if test="purchaseContractHead.effectEndDate != null and purchaseContractHead.effectEndDate !='' "> and  f.effect_date &lt;=to_date(#{purchaseContractHead.effectEndDate},'yyyy-mm-dd') </if>
+		</where>
+	    ) a	
+		<if test="page!= null">
+			where a.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	 </select>
+	 <!-- 查询记录数 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count (*) from (
+		select f.* ,s.supplier_name supplierName,s.linkman,s.tel,ROW_NUMBER() OVER (order by effect_date desc ) r
+		from b_purchase_contract_head f  
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="purchaseContractHead.contractNo != null and purchaseContractHead.contractNo !='' "> and  f.contract_no like '%' || #{purchaseContractHead.contractNo} || '%' </if>
+			<if test="purchaseContractHead.supplierName != null and purchaseContractHead.supplierName !='' "> and s.supplier_name like '%' || #{purchaseContractHead.supplierName} || '%'</if>
+			<if test="purchaseContractHead.state != null and purchaseContractHead.state !='' "> and  f.state = #{purchaseContractHead.state} </if>
+			<if test="purchaseContractHead.signStartDate != null and purchaseContractHead.signStartDate !='' "> and  f.sign_date &gt;=to_date(#{purchaseContractHead.signStartDate},'yyyy-mm-dd') </if>
+			<if test="purchaseContractHead.signEndDate != null and purchaseContractHead.signEndDate !='' "> and  f.sign_date &lt;=to_date(#{purchaseContractHead.signEndDate},'yyyy-mm-dd') </if>
+			<if test="purchaseContractHead.effectStartDate != null and purchaseContractHead.effectStartDate !='' "> and  f.effect_date &gt;=to_date(#{purchaseContractHead.effectStartDate},'yyyy-mm-dd') </if>
+			<if test="purchaseContractHead.effectEndDate != null and purchaseContractHead.effectEndDate !='' "> and  f.effect_date &lt;=to_date(#{purchaseContractHead.effectEndDate},'yyyy-mm-dd') </if>
+		</where>
+	 ) 		
+	</select>	
+	<!-- 新增框架协议信息 -->
+	<insert id="insert" parameterType="PurchaseContractHead" >
+		insert into b_purchase_contract_head 
+		(id,contract_no,varieties,tender_contract,sign_date,effect_date,expire_date,extended_year,supplier,state,
+		a_responsible_department,b_responsible_department,party_a_name,party_a_chargeperson,remark,extended_expire_date,purchase_no,materialsPurchaseId,bank_account_number)
+		 VALUES
+		(#{id},#{contractNo},#{varieties},#{tenderContract},#{signDate},#{effectDate},#{expireDate},#{extendedYear},#{supplier},
+		#{state},#{aResponsibleDepartment},#{bResponsibleDepartment},#{partyAName},#{partyAChargeperson},#{remark},#{extendedExpireDate},#{purchase_no},#{materialsPurchaseId},#{bank_account_number})
+	</insert>
+	<!-- 更新框架协议信息 -->
+	<update id="update" parameterType="PurchaseContractHead">
+		update b_purchase_contract_head    set 
+		contract_no = #{contractNo}, varieties = #{varieties},tender_contract=#{tenderContract},sign_date=#{signDate},
+		effect_date=#{effectDate},expire_date=#{expireDate},extended_year=#{extendedYear},supplier=#{supplier},
+		state=#{state},a_responsible_department=#{aResponsibleDepartment},b_responsible_department=#{bResponsibleDepartment},
+		party_a_name=#{partyAName},party_a_chargeperson=#{partyAChargeperson},remark=#{remark},extended_expire_date=#{extendedExpireDate},
+		purchase_no=#{purchase_no},materialsPurchaseId=#{materialsPurchaseId},bank_account_number=#{bank_account_number}
+		where id = #{id}
+	</update>
+	<!-- 根据ID查询框架协议信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="purchaseContractHeadMap">
+		select 	f.*,s.supplier_name supplierName,s.linkman,s.tel,s.opening_bank,s.legal_person,s.email
+		from b_purchase_contract_head  f   
+		INNER JOIN base_supplier s ON f.supplier=s.id 
+		where f.id = #{id}
+	</select>
+	<!-- 通过截取单据号的年月来查询单据 -->
+	<select id="countNo" parameterType="String" resultType="int">
+	select count(*) from b_purchase_contract_head where substr(contract_no,5,6)=#{yearMon} 
+	</select>
+	<!-- 查询全部框架协议信息 -->
+	<select id="selectAll" resultMap="purchaseContractHeadMap" >
+		select * from b_purchase_contract_head
+	</select>
+	<!-- 判断数据库中协议编码是否存在  -->
+	<select id="selectNoRepeat" resultType="int" parameterType="String" >
+		select count(*) from b_purchase_contract_head  a where  a.contract_no = #{contractNo} 
+	</select>
+	
+	<!-- 查询是否已经生成框架合同(生成框架协议用) -->
+	<select id="selectByTenderContract" resultMap="purchaseContractHeadMap" >
+		select * from b_purchase_contract_head
+		where tender_Contract=#{tender_contract}
+	</select>
+</mapper>
+    

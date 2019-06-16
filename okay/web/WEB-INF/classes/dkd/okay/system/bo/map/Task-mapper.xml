@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Task">
+	<resultMap type="Task" id="taskMap">
+			<result column="row_Num" property="rowNum"/>	
+			<result column="work_type" property="workType"/>
+			<result column="connections" property="connections"/>
+			<result column="process_name" property="processName"/>	
+			<result column="work_no" property="workNo"/>	
+			<result column="state" property="workState"/>
+			<result column="role_name" property="roleName"/>
+			<result column="project_no" property="projectNo"/>
+			<result column="project_name" property="projectName"/>
+		</resultMap>
+	<!-- 根据当前登录用户查询待审任务 -->
+	<select id="loadProcessTaskByUser" resultMap="taskMap">
+		SELECT process.work_no,order_no,process.user_id,
+		process.role_id,roleInfo.role_name,process.process_name,head.work_type,head.connections ,process.project_no,process.project_name,
+		ROW_NUMBER() OVER(order by process.work_no) as row_Num 
+		FROM (
+			SELECT b.* FROM (
+				SELECT work_no,min(order_no) as orderNO FROM sys_work_process_record WHERE CHECK_RESULT='待审核' GROUP BY work_no
+			)  a LEFT JOIN sys_work_process_record  b ON a.work_no=b.work_no AND b.order_no=a.orderNO
+		)  process inner JOIN sys_flowset_head  head on process.fk_record_id = head.record_id 
+		left JOIN sys_role  roleInfo ON roleInfo.role_id=process.role_id
+		WHERE CHECK_RESULT='待审核' 
+		and (user_id like '%' + #{userId} + '%' 
+			OR 
+			(user_id IS NULL OR user_id='') and process.role_id in( SELECT role.role_id FROM sys_user_role role where role.user_id=#{userId})
+			) 
+	</select>
+	<!-- 根据当前登录用户查询其待办任务 -->
+	<select id="loadBackLogTaskByUser" resultMap="taskMap" >
+	select * from (
+		(SELECT '质检结果ck' as work_Type, QUALITY_NO as work_no,qh.STATE,qh.PROJECT_NAME 
+		 FROM T_QUALITY_HEAD as qh
+		 left join T_RECEIVING_HEAD as re on qh.RECEIVING_NO = re.RECEIVING_NO
+		 left join T_CONTRACT_HEAD as con on qh.contract_no = con.contract_no 
+		 where qh.STATE ='质检完成' AND re.INPUT_USERID=#{user.userId}  
+		 AND re.COMPANY_ID=#{user.COMPANY_ID} and noticeck is null 
+		 AND con.INPUT_USERID!=#{user.userId} 
+		 ) ) as a order by work_Type
+	</select>
+</mapper>

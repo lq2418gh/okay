@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FlowsetDetail">
+	<resultMap type="FlowsetDetail" id="FlowsetDetailMap">
+		<id column="record_id" property="record_id"/>
+		<result column="order_no" property="order_no"/>
+		<result column="flow_name" property="flow_name"/>
+		<result column="role_id" property="role_id"/>
+		<result column="role_name" property="role_name"/>
+		<result column="flow_sign" property="flow_sign"/>
+		<result column="memo" property="memo"/>
+		<result column="ifdel" property="ifdel"/>
+		<association column="fk_record_id" property="flowset"  javaType="Flowset">  
+            <id column="record_id" property="record_id"/> 
+        </association>
+	</resultMap>
+	<select id="selectByCondition" resultMap="FlowsetDetailMap" parameterType="map">
+		select * from sys_flowset_detail fd where fd.ifdel = 0 and fd.fk_record_id = #{record_id}
+		order by fd.order_no
+	</select>
+	<select id="selectByPk" resultMap="FlowsetDetailMap" parameterType="string">
+		select * from sys_flowset_detail fd where fd.ifdel = 0 and fd.record_id = #{record_id} 
+	</select>
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from sys_flowset_detail fd where fd.ifdel = 0		
+			<if test="order_no != null and order_no != ''">and fd.order_no = #{order_no}</if>
+			<if test="fk_record_id != null and fk_record_id != ''">and fd.fk_record_id = #{fk_record_id}</if>		
+	</select>
+	<insert id="insert" parameterType="FlowsetDetail">
+		insert into sys_flowset_detail (
+			record_id,order_no,flow_name,role_id,role_name,flow_sign,memo,fk_record_id
+		) values (
+			#{record_id},#{order_no},#{flow_name},#{role_id},#{role_name},#{flow_sign},#{memo},#{flowset.record_id}
+		)
+	</insert> 
+	<update id="update" parameterType="FlowsetDetail">
+		update sys_flowset_detail 
+		<set>   
+			<if test="flow_name!= null">flow_name = #{flow_name},</if>
+			<if test="role_id!= null">role_id = #{role_id},</if>
+			<if test="role_name!= null ">role_name = #{role_name},</if>
+			<if test="flow_sign!= null ">flow_sign = #{flow_sign},</if>
+			<if test="memo!= null ">memo = #{memo}</if>
+		</set>
+		where record_id = #{record_id} 
+	</update> 
+	<update id="deleteFlowsetDetail" parameterType="string">
+		update sys_flowset_detail set ifdel = 1 where record_id = #{record_id}
+	</update> 
+</mapper>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:jsp="http://java.sun.com/xml/ns/javaee/jsp"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+	<!-- 项目名称 -->
+	<display-name>BaseFrameWork</display-name>
+	<welcome-file-list>
+		<welcome-file>login.jsp</welcome-file>
+	</welcome-file-list>
+	<!-- 加载spring上下文配置文件 -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>
+		/WEB-INF/spring-application.xml,
+		/WEB-INF/spring-mvc.xml,
+		/WEB-INF/spring-security.xml
+		</param-value>
+	</context-param>
+	<!-- Spring监听 -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	<!-- 限制会话并发登录 -->
+	<listener>
+		<listener-class>org.springframework.security.web.session.HttpSessionEventPublisher</listener-class>
+	</listener>
+	<!-- 加载springMVC上下文配置文件 -->
+	<servlet>
+		<servlet-name>springmvc</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>/WEB-INF/spring-mvc.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<!-- springMVC拦截.do资源 -->
+	<servlet-mapping>
+		<servlet-name>springmvc</servlet-name>
+		<url-pattern>*.do</url-pattern>
+	</servlet-mapping>
+	<!-- 登录验证码配置 -->
+	<filter>
+		<filter-name>jcaptchaFilter</filter-name>
+		<filter-class>dkd.okay.system.util.code.JCaptchaFilter</filter-class>
+		<init-param>
+			<param-name>failureUrl</param-name>
+			<param-value>/login.jsp</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>jcaptchaFilter</filter-name>
+		<url-pattern>/jcaptcha.jpg</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>jcaptchaFilter</filter-name>
+		<url-pattern>/j_spring_security_check</url-pattern>
+	</filter-mapping> 
+	<!-- Security权限拦截配置 -->
+	<filter>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<!-- 防止内存泄露 -->
+	<listener>
+		<listener-class>org.springframework.web.util.IntrospectorCleanupListener</listener-class>
+	</listener>
+	
+	<!-- session超时 -->
+	<session-config>
+		<session-timeout>240</session-timeout>
+	</session-config>
+	<!-- 字符编码过滤器 -->
+	<filter>
+		<filter-name>encodingFilter</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+		<init-param>
+			<param-name>forceEncoding</param-name>
+			<param-value>true</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>encodingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<!-- 自定义标签 -->
+	<jsp-config>
+		<taglib>
+			<taglib-uri>/web-html</taglib-uri>
+			<taglib-location>/WEB-INF/web-html.tld</taglib-location>
+		</taglib>
+	</jsp-config>
+	<!-- 错误页配置 -->
+	<error-page>
+		<exception-type>java.lang.Exception</exception-type>
+		<location>/WEB-INF/jsp/common/errorpage.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>403</error-code>
+		<location>/403.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>404</error-code>
+		<location>/404.jsp</location>
+	</error-page>
+</web-app>

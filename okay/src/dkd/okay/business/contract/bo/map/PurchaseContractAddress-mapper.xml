@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PurchaseContractAddress">
+	<resultMap type="PurchaseContractAddress" id="purchaseContractAddressMap">
+	<id column="id" property="id" />
+	<result column="purchase_contract_head" property="purchaseContractHead" />
+	<result column="delivery_address" property="deliveryAddress" />
+	</resultMap>
+	
+	<!-- 删除收货地址明细信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_purchase_contract_address  
+		where purchase_contract_head = #{purchaseContractHead}
+	</delete>
+	<!-- 新增收货地址明细信息 -->
+	<insert id="insert" parameterType="PurchaseContractAddress" >
+		insert into b_purchase_contract_address
+		(id,purchase_contract_head,delivery_address)
+		 VALUES
+		(#{id},#{purchaseContractHead},#{deliveryAddress})
+	</insert>
+	<!-- 根据ID查询收货地址明细信息 -->
+	<select id="selectById" resultMap="purchaseContractAddressMap">
+		select 	b.*
+		from b_purchase_contract_address b    
+		where b.purchase_contract_head = #{purchaseContractHead}
+	</select>
+</mapper>

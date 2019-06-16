@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Payment">
+	<resultMap type="Payment" id="paymentMap">
+	 	<id column="id" property="id" />
+	 	<result column="payment_no" property="paymentNo" />
+		<result column="filling_date" property="fillingDate" />
+	    <result column="supplier" property="supplier" />
+	    <result column="state" property="state" />
+	    <result column="amount" property="amount" />
+		<result column="invoice_ids" property="invoiceIds" jdbcType="CLOB" javaType="String"/>
+		<result column="invoice_nos" property="invoiceNos" jdbcType="CLOB" javaType="String"/>
+		<result column="storage_ids" property="storageIds" jdbcType="CLOB" javaType="String"/>
+		<result column="storage_nos" property="storageNos" jdbcType="CLOB" javaType="String"/>
+		<result column="frame_nos" property="frameNos" jdbcType="CLOB" javaType="String"/>
+		<result column="contract_nos" property="contractNos" jdbcType="CLOB" javaType="String"/>
+		<result column="amount_paid" property="amountPaid"/>
+		<result column="explain" property="explain"/>
+		<result column="bank_account_number" property="bank_account_number"/>
+		<result column="SUPPLIER_NAME" property="supplier_name"/>
+		<result column="OPENING_BANK" property="opening_bank" />
+	</resultMap>
+	<!-- 根据分页查询付款信息 -->
+	<select id="selectByCondition" resultMap="paymentMap" parameterType="map">
+	   select * from(
+		select f.*,s.supplier_name,ROW_NUMBER() OVER (order by payment_no desc ) r
+		from b_payment f
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="payment.paymentNo != null and payment.paymentNo !='' "> and  f.payment_no like '%' || #{payment.paymentNo} || '%' </if>
+			<if test="payment.fillingStartDate != null and payment.fillingStartDate !='' "> and  f.filling_date &gt;=to_date(#{payment.fillingStartDate},'yyyy-mm-dd') </if>
+			<if test="payment.fillingEndDate != null and payment.fillingEndDate !='' "> and  f.filling_date &lt;=to_date(#{payment.fillingEndDate},'yyyy-mm-dd') </if>
+		</where>
+	    ) a	
+		<if test="page!= null">
+			where a.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+	 </select>
+	<!-- 根据分页查询付款信息 -->
+	<select id="countParam" resultType="int" parameterType="map">
+	   select count (*) from(
+		select f.*,s.supplier_name,ROW_NUMBER() OVER (order by payment_no desc ) r
+		from b_payment f
+		INNER JOIN base_supplier s ON f.supplier=s.id
+		<where>
+			<if test="payment.paymentNo != null and payment.paymentNo !='' "> and  f.payment_no like '%' || #{payment.paymentNo} || '%' </if>
+			<if test="payment.fillingStartDate != null and payment.fillingStartDate !='' "> and  f.filling_date &gt;=to_date(#{payment.fillingStartDate},'yyyy-mm-dd') </if>
+			<if test="payment.fillingEndDate != null and payment.fillingEndDate !='' "> and  f.filling_date &lt;=to_date(#{payment.fillingEndDate},'yyyy-mm-dd') </if>
+			<if test="payment.state != null and payment.state !='' "> and  f.state = #{payment.state}</if>
+		</where>
+	    )
+	 </select>
+	 <!-- 新增付款信息 -->
+	<insert id="insert" parameterType="Payment" >
+		insert into b_payment 
+		(id,payment_no,filling_date,supplier,state,amount,invoice_ids,invoice_nos,
+		storage_ids,storage_nos,frame_nos,contract_nos,amount_paid,explain,bank_account_number)
+		 VALUES
+		(#{id},#{paymentNo},#{fillingDate},#{supplier},#{state},#{amount},#{invoiceIds},#{invoiceNos},
+		#{storageIds},#{storageNos},#{frameNos},#{contractNos},#{amountPaid},#{explain},#{bank_account_number})
+	</insert>
+	<!-- 更新付款信息 -->
+	<update id="update" parameterType="Payment">
+		update b_payment    set 
+		payment_no = #{paymentNo}, filling_date = #{fillingDate},supplier=#{supplier},state=#{state},
+		amount=#{amount},invoice_ids=#{invoiceIds},invoice_nos=#{invoiceNos},storage_ids=#{storageIds},
+		storage_nos=#{storageNos},frame_nos=#{frameNos},contract_nos=#{contractNos},amount_paid=#{amountPaid},
+		explain=#{explain},bank_account_number=#{bank_account_number}
+		where id = #{id}
+	</update>
+	<!-- 根据ID查询付款信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="paymentMap">
+		select 	f.*,s.supplier_name,s.opening_bank
+		from b_payment    f   
+		INNER JOIN base_supplier s ON f.supplier=s.id 
+		where f.id = #{id}
+	</select>
+		<!-- 删除付款信息 -->
+	<delete id="delete" parameterType="String">
+		delete from  b_payment  
+		where id = #{id}
+	</delete>
+	<!-- 通过截取单据号的年月来查询单据 -->
+	<select id="countNo" parameterType="String" resultType="int">
+		select count(*) from b_payment where substr(payment_no,3,8)=#{ymd} 
+	</select>
+	<!-- 校验重复编号 -->
+	<select id="selectNoRepeat" parameterType="map" resultType="int">
+		select count(*) from  b_payment where payment_no=#{paymentNo}
+		<if test="id != null and id !='' "> and id!=#{id} </if>
+	</select>
+</mapper>

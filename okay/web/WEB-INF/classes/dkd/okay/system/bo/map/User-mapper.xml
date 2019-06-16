@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="User">
+	<resultMap type="User" id="userMap">
+		<id column="user_id" property="userId"/>
+		<result column="userName" property="userName"/>
+		<result column="passWord" property="passWord"/>
+		<result column="sysAdmin" property="sysAdmin"/>
+		<result column="appAdmin" property="appAdmin"/>
+		<result column="isUse" property="isUse"/>
+		<result column="isDel" property="isDel"/>
+		<association column="userInfo_id" property="userInfo"  javaType="UserInfo">  
+            <id column="userInfo_id" property="userInfoId"/>
+            <result column="realName" property="realName"/>
+            <result column="sign_password" property="sign_password"/>
+			<result column="HaiyangUserCode" property="HaiyangUserCode"/>
+			<result column="workEmail" property="workEmail"/>
+			<result column="position" property="position"/>
+			<result column="GufenUserCode" property="GufenUserCode"/>
+            <association column="company_id" property="company"  javaType="Company">  
+            	<id column="company_id" property="companyId"/> 
+            	<result column="company_name" property="companyName"/>
+            	<result column="company_code" property="companyCode"/>
+        	</association>
+        </association>
+        <collection property="userAuthorities" ofType="UserAuthority" column="userId">
+        	<id column="auth_id" property="authId"/>
+			<result column="auth_code" property="authCode"/>
+        </collection> 
+	</resultMap>
+	<!-- 常量 -->
+	<sql id="all">u.user_id,u.username,u.passWord,u.sysAdmin,u.appAdmin,u.isUse,u.isDel</sql>
+	<!-- 根据用户名查询用户信息 -->  
+	<select id="selectUserByUserName" resultMap="userMap" parameterType="String" >
+		select <include refid="all"/>,
+		ua.user_id,ua.auth_id,ua.auth_code,
+		ui.userInfo_id,ui.realname,ui.sign_password,
+		c.company_id,c.company_name 
+		from sys_user u 
+		inner join sys_user_authority  ua on u.user_id = ua.user_id
+		inner join sys_userinfo  ui on ui.user_id = u.user_id
+		inner join sys_company  c on c.company_id = ui.company_id
+		where u.username = #{username} and u.isuse = 1 and u.isdel = 0
+	</select>
+	<!-- 根据用户ID查询用户权限 -->  
+	<select id="selectUserAuthByUserInfoId" resultMap="userMap" parameterType="String" >
+		select u.user_id,ua.user_id,ua.auth_id,ua.auth_code from sys_user  u 
+		left join sys_user_authority  ua on u.user_id = ua.user_id 
+		where u.userinfo_id = #{userInfoId}
+	</select>
+	<!-- 新增用户登录信息 -->  
+	<insert id="insert" parameterType="User">
+		insert into sys_user (user_id,userinfo_id,username ) values (#{userId},#{userInfo.userInfoId},#{userName})
+	</insert>
+	<!-- 删除用户登录信息 --> 
+	<update id="delete" parameterType="string">	
+		update sys_user set isdel = 1,username=username||'（删除）' where user_id = #{userId}
+	</update> 
+	<!-- 禁用用户登录信息 --> 
+	<update id="updateDisable" parameterType="User">	
+		update sys_user set isuse = 0 where user_id = #{userId}
+	</update> 
+	<!-- 计算数据量 --> 
+	<select id="countParam" resultType="int" parameterType="string">
+		select count(*) from sys_user where userName = #{userName}  
+	</select>
+	<!-- 修改用户信息 --> 
+	<update id="update" parameterType="User">
+		update sys_user set 
+		<if test="passWord!= null and passWord!= ''">passWord = #{passWord}</if> where user_id = #{userId}
+	</update>
+	<!-- 高级用户方法 --> 
+	<!-- 查询高级用户信息 --> 
+	<select id="selectSeniorUser" resultMap="userMap">
+		select u.username,u.passWord,u.sysAdmin,u.appAdmin,u.isUse,u.isDel,ui.* 
+		from sys_user  u 
+		inner join sys_userinfo  ui on ui.user_id = u.user_id
+		inner join sys_company   c on c.company_id = ui.company_id
+		where u.isdel = 0 and u.appAdmin = 1  
+		ORDER BY user_id 
+	</select>
+	<select id="selectSeniorUserById" resultMap="userMap" parameterType="string">
+		select u.username,u.passWord,u.sysAdmin,u.appAdmin,u.isUse,u.isDel,ui.* 
+		from sys_user  u 
+		inner join sys_userinfo  ui on ui.user_id = u.user_id
+		inner join sys_company   c on c.company_id = ui.company_id
+		where u.isdel = 0 and u.appAdmin = 1 and u.user_id=#{userId}
+		ORDER BY user_id 
+	</select>
+	<!-- 新增高级用户登录信息	-->  
+	<insert id="insertSeniorUser" parameterType="User">
+		insert into sys_user (user_id,userinfo_id,username  ,appAdmin ) values (#{userId},#{userInfo.userInfoId},#{userName}  ,#{appAdmin} );
+	</insert>
+	<!-- 启用用户登录信息 --> 
+	<update id="updateEnable" parameterType="User">	
+		update sys_user set isuse = 1 where user_id = #{userId}
+	</update> 
+	<!-- 根据用户ID查询高级用户权限 -->  
+	<select id="selectSeniorUserAuthByUserInfoId" resultMap="userMap" parameterType="String" >
+		select u.user_id,ua.user_id,ua.auth_id,ua.auth_code from sys_user  u 
+		left join sys_senior_user_authority  ua on u.user_id = ua.user_id 
+		where u.userinfo_id = #{userInfoId}
+	</select>
+	
+	<!-- 根据用户名查询用户信息 -->  
+	<!-- and u.isuse = 1 -->
+	<select id="selectUserByUserId" resultMap="userMap" parameterType="String" >
+		select <include refid="all"/>,
+		ua.user_id,ua.auth_id,ua.auth_code,
+		ui.userInfo_id,ui.realname,ui.sign_password,ui.HaiyangUserCode,ui.GufenUserCode,ui.workEmail,ui.position,
+		c.company_id,c.company_name,c.company_code
+		from sys_user  u 
+		inner join sys_user_authority  ua on u.user_id = ua.user_id
+		inner join sys_userinfo  ui on ui.user_id = u.user_id
+		inner join sys_company   c on c.company_id = ui.company_id
+		where u.user_id = #{userId} and u.isdel = 0
+	</select>
+	<!-- 重置密码 --> 
+	<update id="initPassword" parameterType="string">	
+		update sys_user set passWord='c4ca4238a0b923820dcc509a6f75849b' where user_id = #{userId}
+	</update> 
+</mapper>

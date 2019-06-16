@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SupplierScore">
+	<resultMap type="SupplierScore" id="supplierScoreMap">
+		<id column="ID" property="id"/>
+		<result column="YEAR" property="year"/>
+		<result column="SCORE" property="score"/>
+		
+		<association property="supplier_id" javaType="Supplier">
+			<id column="ID" property="id"/>
+			<result column="SUPPLIER_NO" property="supplier_no"/>
+			<result column="SUPPLIER_NAME" property="supplier_name"/>
+		</association>
+	</resultMap>
+	
+	<insert id="insert" parameterType="SupplierScore">
+		insert into b_supplier_score 
+		(id,year,score,supplier_id)
+		values(
+			#{id}, #{year},#{score,jdbcType=DOUBLE},#{supplier_id.id}
+		)
+	</insert>
+	<delete id="delete" parameterType="String">
+		delete from b_supplier_score where supplier_id = #{supplier_id}
+	</delete>
+	
+</mapper>

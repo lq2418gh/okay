@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xmlns:p="http://www.springframework.org/schema/p" 
+xmlns:aop="http://www.springframework.org/schema/aop" 
+xmlns:context="http://www.springframework.org/schema/context" 
+xmlns:jee="http://www.springframework.org/schema/jee" 
+xmlns:tx="http://www.springframework.org/schema/tx"
+xmlns:mvc="http://www.springframework.org/schema/mvc" 
+xsi:schemaLocation="
+		http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+		http://www.springframework.org/schema/jee 
+		http://www.springframework.org/schema/jee/spring-jee-2.5.xsd
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx-2.5.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-2.5.xsd
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd"	>
+	
+<!-- 菜单-->	
+	<bean class="dkd.okay.system.util.menu.MenuBean">
+		<property name="sysMenuList">
+			<list>
+				<bean id="sysManage" class="dkd.okay.system.util.menu.SysMenu" p:order="01" p:cname="系统功能设置" p:authority="ROLE_SYS_MENU" p:icon="glyphicon glyphicon-cog">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="用户管理" p:authority="ROLE_SYS_USER" p:url="/user/user.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="角色管理" p:authority="ROLE_SYS_ROLE" p:url="/role/role.do"/>
+ 							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="部门管理" p:authority="ROLE_SYS_DEP" p:url="/company/company.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="系统字典管理" p:authority="ROLE_SYS_SYSDIC" p:url="/sysdictionary/dictionary.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="业务日志管理" p:authority="ROLE_SYS_LOG" p:url="/log/query.do?logType=2"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="流程配置管理" p:authority="ROLE_SYS_FLOWSET" p:url="/flowset/flowset.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="权限管理" p:authority="ROLE_SYS_AUTHORITY" p:url="/authority/authframe.do"/>
+						</list>
+					</property>
+				</bean>
+				<bean id="baseinfo" class="dkd.okay.system.util.menu.SysMenu" p:order="02" p:cname="基础信息管理" p:authority="ROLE_BASEINFO_MENU" p:icon="glyphicon glyphicon-info-sign">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="物料编码管理" p:authority="ROLE_COMMODITY_ROLE" p:url="/material/materialsType.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="仓库储位管理" p:authority="ROLE_WAREHOUSE_ROLE" p:url="/warehouse/warehouse.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="供应商管理" p:authority="ROLE_SUPPLIER_ROLE" p:url="/supplier/supplierQuery.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="预算科目管理" p:authority="ROLE_BUDGETACCOUNT_ROLE" p:url="/budgetAccount/query.do"/>
+						</list>
+					</property>
+				</bean>
+				<bean id="purchasePlan" class="dkd.okay.system.util.menu.SysMenu" p:order="03" p:cname="物资计划管理" p:authority="ROLE_MATERIAL_PLAN_MEAN" p:icon="glyphicon glyphicon-indent-left">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="年度物资采购计划" p:authority="ROLE_PURCHASE_PLAN" p:url="/purchase/query.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="计划预算" p:authority="ROLE_BUDGETPLAN_ROLE" p:url="/budgetPlan/query.do"/>
+						</list>
+					</property>
+				</bean>
+				<bean id="materialPurchase" class="dkd.okay.system.util.menu.SysMenu" p:order="04" p:cname="采购申请管理" p:authority="ROLE_PURCHASE_REQUISITIONS_MEAN" p:icon="glyphicon glyphicon-shopping-cart">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="物资采购审批表" p:authority="ROLE_MATERIAL_PURCHASE" p:url="/materialPurchase/query.do"/>
+						</list>
+					</property>
+				</bean>
+				<bean id="tender" class="dkd.okay.system.util.menu.SysMenu" p:order="05" p:cname="招标管理" p:authority="ROLE_TENDER_MEAN" p:icon="glyphicon glyphicon-briefcase">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="协议招标" p:authority="ROLE_TENDER" p:url="/tender/query.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="合同招标" p:authority="ROLE_TENDER_CONTRACT" p:url="/tenderContract/query.do"/>
+						</list>
+					</property>
+				</bean>
+				<bean id="contract" class="dkd.okay.system.util.menu.SysMenu" p:order="06" p:cname="协议/合同管理" p:authority="ROLE_CONTRACT_MEAN" p:icon="glyphicon glyphicon-file">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="协议管理" p:authority="ROLE_FRAME" p:url="/frame/query.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="合同管理" p:authority="ROLE_PURCHASE_CONTRACT" p:url="/purchaseContract/query.do"/>
+						</list>
+					</property>
+				</bean>
+				<bean id="order" class="dkd.okay.system.util.menu.SysMenu" p:order="07" p:cname="采购订单管理" p:authority="ROLE_ORDER_MENU" p:icon="glyphicon glyphicon-calendar">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="物资采购订单" p:authority="ROLE_MATERIAL_PURCHASE_ORDER" p:url="/order/query.do"/>
+						</list>	
+					</property>
+				</bean>
+				<bean id="storage" class="dkd.okay.system.util.menu.SysMenu" p:order="08" p:cname="物资库存管理" p:authority="ROLE_STOCK_MEAN" p:icon="glyphicon glyphicon-unchecked">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="物资入库" p:authority="ROLE_STORAGE" p:url="/storage/query.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="直达现场" p:authority="ROLE_DIRECT" p:url="/direct/query.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="库存统计" p:authority="ROLE_STOCK" p:url="/stock/query.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="物资出库" p:authority="ROLE_OUTSTOCK" p:url="/outstock/query.do"/>
+						</list>
+					</property>
+				</bean>
+				<bean id="invoice" class="dkd.okay.system.util.menu.SysMenu" p:order="09" p:cname="付款管理" p:authority="ROLE_PAY_MEAN" p:icon="glyphicon glyphicon-usd">
+					<property name="items">
+						<list>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="发票登记" p:authority="ROLE_INVOICE" p:url="/invoice/query.do"/>
+							<bean class="dkd.okay.system.util.menu.SysMenu" p:cname="付款登记" p:authority="ROLE_PAYMENT" p:url="/payment/query.do"/>
+						</list>
+					</property>
+				</bean>
+			</list>
+		</property>
+	</bean>
+</beans>

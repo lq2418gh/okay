@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="MaterialType">
+
+	 <resultMap type="MaterialType" id="materialTypeMap">
+		<id column="id" property="id" />
+		<result column="parent" property="parent" />
+		<result column="code" property="code" />
+		<result column="name" property="name" />
+		<result column="unit" property="unit" />
+		<result column="levels" property="levels" />
+		<result column="remark" property="remark" />
+		<result column="ParentCode" property="ParentCode" />
+		<result column="ParentName" property="ParentName" />
+	</resultMap>
+	
+	<sql id="all"> m.id,m.parent,m.code,m.name,m.unit,m.levels,m.remark</sql>
+	
+	<!-- 查询全部物料类别信息 -->
+	<select id="selectAllTwo" resultMap="materialTypeMap" parameterType="String">
+		select <include refid="all"/> 
+		from base_material_type m  
+		where m.parent = #{id} 
+		ORDER BY m.code
+	</select>
+
+	<!-- 查询全部物料类别信息 ,别的模块调用用的方法-->
+	<select id="selectAll" resultMap="materialTypeMap" >
+		select <include refid="all"/> 
+		from base_material_type m   
+		ORDER BY m.code
+	</select>
+	
+	<!-- 根据上级ID分页查询物料类别信息 -->
+	<select id="selectByCondition" resultMap="materialTypeMap" parameterType="map" flushCache="true">
+	select * from (
+		select m.*,ROW_NUMBER() OVER (order by code) r,
+		nvl((select mm.code from base_material_type mm where mm.id = m.parent ),'物料类别根节点')  parentCode  
+		from base_material_type  m  where m.parent = #{parentId}
+		<if test="materialType !=  null">
+			<if test="materialType.code !=  null">
+				and m.code like '%' || #{materialType.code} || '%'
+			</if>
+			<if test="materialType.name !=  null">
+				and m.name like '%' || #{materialType.name} || '%'
+			</if>
+		</if>
+		)s
+		<if test="page!= null">
+			where s.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+		ORDER BY code 
+	</select>
+	
+	<!-- 根据上级ID查询物料类别信息数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from base_material_type  m where m.parent = #{parentId}
+		<if test="materialType !=  null">
+		<if test="materialType.code !=  null">
+			and m.code like '%' || #{materialType.code} || '%'
+		</if>
+		<if test="materialType.name !=  null">
+			and m.name like '%' || #{materialType.name} || '%'
+		</if>
+		</if>
+	</select> 
+	
+	<!-- 根据ID查询物料类别信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="materialTypeMap">
+		SELECT 	<include refid="all" />
+		from base_material_type m 
+		WHERE m.id = #{parentId}
+	</select>
+	
+	<!-- 根据ID查询物料类别信息 -->
+	<select id="selectMaterialsTypeAndDicAndParentById" parameterType="String" resultMap="materialTypeMap">
+		SELECT 	m.id,m.parent,m.code,m.name,m.levels,m.remark,n.code ParentCode,n.name ParentName,d.dic_name unit
+	    from base_material_type m 
+	    left join base_material_type n on n.id=m.parent
+	    inner join sys_dictionary d on m.unit=d.dic_code
+	    where m.id =#{id}
+	</select>  
+	
+	<!-- 根据ID查询物料类别信息 -->
+	<select id="selectMaterialsTypeAndParentById" parameterType="String" resultMap="materialTypeMap">
+		SELECT 	m.id,m.parent,m.code,m.name,m.levels,m.remark,n.code ParentCode,n.name ParentName,m.unit
+	    from base_material_type m 
+	    left join base_material_type n on n.id=m.parent
+	    where m.id =#{id}
+	</select>  
+	
+	<!-- 根据父节点查找子节点的物资类别编码 -->
+	<select id="selectParentCode" resultMap="materialTypeMap" parameterType="String">
+		select n.*
+		from base_material_type m,base_material_type n 
+		where m.id=n.parent and m.id=#{id}
+		order by n.code desc
+	</select>
+	<!-- 根据根节点查找子节点的物资类别编码 -->
+	<select id="selectParentCodes" resultMap="materialTypeMap" parameterType="String">
+		select m.*
+		from base_material_type m
+		where m.parent=#{id}
+		order by m.code desc
+	</select>
+	
+	<!-- 新增物料类别信息 -->
+	<insert id="insert" parameterType="MaterialType" >
+		INSERT INTO base_material_type 
+		(id ,parent,name,code,unit,levels,remark)
+		VALUES
+		(#{id},#{parent},#{name},#{code},#{unit},#{levels},#{remark})
+	</insert>
+	
+	<!-- 更新物料类别信息 -->
+	<update id="update" parameterType="MaterialType">
+		UPDATE base_material_type SET 
+		name = #{name}, 
+		unit = #{unit},
+		remark = #{remark} 
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 删除物料类别信息 -->
+	<delete id="delete" parameterType="String">
+		DELETE FROM base_material_type
+		WHERE id = #{id}
+	</delete>
+	
+	<!-- 根据物资parent查询是否有物资信息 -->
+	<select id="selectByPid" parameterType="String" resultMap="materialTypeMap">
+		SELECT <include refid="all"/>
+		FROM base_material_type m
+		WHERE m.parent = #{parent}
+	</select>
+	
+	<!-- 根据code查询是否编码已经存在 -->
+	<select id="selectMaterialTypeCode" parameterType="String" resultMap="materialTypeMap">
+		SELECT <include refid="all"/>
+		FROM base_material_type m
+		WHERE m.code = #{code}
+	</select>
+</mapper>

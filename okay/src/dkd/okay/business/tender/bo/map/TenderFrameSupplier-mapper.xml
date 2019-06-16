@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TenderFrameSupplier">
+
+	 <resultMap type="TenderFrameSupplier" id="tenderFrameSupplierMap">
+		<id column="id" property="id" />
+		<result column="tender_frame" property="tender_frame" />
+		<result column="supplier" property="supplier" />
+		<result column="email" property="email" />
+		<result column="supplier_name" property="supplier_name" />
+	</resultMap>
+	
+	<sql id="all">t.id,t.tender_frame,t.supplier,t.email</sql>
+	
+	<insert id="insert" parameterType="TenderFrameSupplier">
+		INSERT INTO b_tender_frame_supplier
+		(id,tender_frame,supplier,email) 
+		VALUES
+		(#{id},#{tender_frame},#{supplier},#{email})
+	</insert>
+	
+	<delete id="delete" parameterType="String">
+	 delete from b_tender_frame_supplier where tender_frame=#{id}
+	</delete>
+	<!-- 检查是否报价表中是否包含供应商信息  -->
+	<select id="selectSupplierName" parameterType="map" resultMap="tenderFrameSupplierMap">
+		select s.supplier_name supplier_name
+		from b_tender_frame_supplier tfs
+		inner join BASE_SUPPLIER s on s.id=tfs.supplier
+		where tender_frame=#{tender_frame} and supplier_name=#{supplier_name}
+	</select>
+	<!--  查找供应商id和框架协议招标供应商ID  -->
+	<select id="selectSupplierIdAndId" parameterType="map" resultMap="tenderFrameSupplierMap">
+		select tfs.id,tfs.supplier,s.supplier_name supplier_name
+		from b_tender_frame_supplier tfs
+		inner join BASE_SUPPLIER s on s.id=tfs.supplier
+		where tender_frame=#{tender_frame} and supplier_name=#{supplier_name}
+	</select>
+</mapper>

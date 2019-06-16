@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Flowset">
+	<resultMap type="Flowset" id="FlowsetMap" >
+		<id column="record_id" property="record_id"/>
+		<result column="record_code" property="record_code"/>
+		<result column="work_type" property="work_type"/>
+		<result column="table_name" property="table_name"/>
+		<result column="state_col" property="state_col"/>
+		<result column="check_val" property="check_val"/>
+		<result column="uncheck_val" property="uncheck_val"/>
+		<result column="order_col" property="order_col"/>
+		<result column="levels" property="levels"/>
+		<result column="memo" property="memo"/>
+		<result column="ifdel" property="ifdel"/>
+		<result column="other_val" property="other_val"/>
+		<result column="unother_val" property="unother_val"/>
+		<!-- 2017/08/29  linss -->
+		<result column="service_name" property="service_name"/>
+		<result column="pass_method" property="pass_method"/>
+		<result column="reject_method" property="reject_method"/>
+		<result column="connections" property="connections"/>
+        <collection property="flowsetDetails" ofType="FlowsetDetail" column="fk_record_id">
+        	<id column="record_id" property="record_id"/>
+        </collection> 
+	</resultMap>
+	<select id="selectAll" resultMap="FlowsetMap">
+		select * from sys_flowset_head  fh where fh.ifdel = 0 order by record_code
+	</select>
+	<select id="selectByPk" resultMap="FlowsetMap" parameterType="string">
+		select * from sys_flowset_head  fh where fh.ifdel = 0 and fh.record_id = #{record_id} 
+	</select>
+	<select id="selectByCode" resultMap="FlowsetMap" parameterType="string">
+		select * from sys_flowset_head  fh where fh.ifdel = 0 and fh.record_code = #{record_code} 
+	</select>
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from sys_flowset_head  fh
+		<where>
+			<if test="record_code != null and record_code != ''">fh.record_code = #{record_code}</if>
+		</where>
+	</select>
+	<insert id="insert" parameterType="Flowset">
+		insert into sys_flowset_head (
+			record_id,record_code,work_type,table_name,state_col,check_val,uncheck_val,order_col,
+			other_val,unother_val,levels,memo,service_name,pass_method,reject_method,connections
+		) values (
+			#{record_id},#{record_code},#{work_type},#{table_name},#{state_col},#{check_val},#{uncheck_val},#{order_col},
+			#{other_val},#{unother_val},#{levels},#{memo},#{service_name},#{pass_method},#{reject_method},#{connections}
+		)
+	</insert> 
+	<update id="update" parameterType="Flowset">
+		update sys_flowset_head set 
+			<if test="work_type!= null">work_type = #{work_type},</if>
+			<if test="table_name!= null">table_name = #{table_name},</if>
+			<if test="state_col!= null ">state_col = #{state_col},</if>
+			<if test="check_val!= null ">check_val = #{check_val},</if>
+			<if test="uncheck_val!= null ">uncheck_val = #{uncheck_val},</if>
+			<if test="order_col!= null ">order_col = #{order_col},</if>
+			<if test="other_val !=  null ">other_val = #{other_val},</if>
+			<if test="unother_val !=  null ">unother_val = #{unother_val},</if>
+			<if test="levels!= null ">levels = #{levels},</if>
+			<if test="memo!= null">memo = #{memo},</if>
+			<if test="service_name!=null">service_name = #{service_name},</if>
+			<if test="pass_method!=null">pass_method = #{pass_method},</if>
+			<if test="reject_method!=null">reject_method = #{reject_method},</if>
+			<if test="connections!=null">connections = #{connections},</if>
+		record_id = #{record_id}  
+		where record_id = #{record_id}
+	</update> 
+	<update id="deleteFlowset" parameterType="string">
+		update sys_flowset_head set ifdel = 1 where record_id = #{record_id}
+	</update> 
+	<update id="updateSQL" parameterType="map" statementType="STATEMENT">
+		update ${table} set 
+		<if test="otherVal != null"> ${otherVal}  </if> 
+		<if test="unotherVal != null"> ${unotherVal}  </if> 
+		 ${col} = ${colVal} 
+		where ${no} = ${noVal}
+	</update> 
+</mapper>

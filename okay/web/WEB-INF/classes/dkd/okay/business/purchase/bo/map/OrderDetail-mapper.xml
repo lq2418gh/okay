@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="OrderDetail">
+
+	<resultMap type="OrderDetail" id="orderDetailMap">
+		<id column="id" property="id" />		
+		<result column="order_row_no" property="order_row_no" />
+		<result column="order_frame" property="order_frame" />
+		<result column="frame_detail_id" property="frame_detail_id" />
+		<result column="contract_detail_id" property="contract_detail_id" />
+		<result column="material_id" property="material_id" />		
+		<result column="main_quantity" property="main_quantity" />
+		<result column="secondary_quantity" property="secondary_quantity" />
+		<result column="main_price" property="main_price" />
+		<result column="secondary_price" property="secondary_price" />
+		<result column="amount" property="amount" />
+		<result column="DELIVERY_DATE" property="delivery_date" />
+		<result column="REMARKS" property="remarks" />	
+		
+		
+	<result column="purchase_head_id" property="purchase_head_id" />
+	<result column="purchase_detail_id" property="purchase_detail_id" />
+			
+		<result column="stock_main_quantity" property="stock_main_quantity" />
+		<result column="stock_secondary_quantity" property="stock_secondary_quantity" />
+		<result column="is_stock" property="is_stock" />
+		
+		
+		<result column="already_main_quantity" property="already_main_quantity" />
+		<result column="already_secondary_quantity" property="already_secondary_quantity" />
+		<result column="is_already" property="is_already" />
+		
+		<result column="already_quantity" property="already_quantity" />
+		<result column="quantity" property="quantity" />	
+		
+		<result column="budget_plan_detail" property="budget_plan_detail" />
+		<result column="centralized_department" property="centralized_department" />
+		<result column="account" property="account" />
+		<result column="department_name" property="department_name" />
+		<result column="account_name" property="account_name" />	
+
+		<association property="material" javaType="Material">   
+           	<id column="mid" property="id" />
+			<result column="material_type" property="material_type" />
+			<result column="code" property="code" />
+			<result column="mName" property="name" />
+			<result column="unit" property="unit" />
+			<result column="unit_help" property="unit_help" />
+			<result column="conversion" property="conversion" />
+			<result column="spec" property="spec" />
+			<result column="state" property="state" />
+			<result column="explain" property="explain" />
+        </association>
+       
+	</resultMap>
+	
+	
+	
+	<!-- 根据主表id查询明细和物资信息 -->
+	<select id="selectDetailByOId" parameterType="String" resultMap="orderDetailMap">
+		select o.id,o.order_row_no,o.order_frame,o.frame_detail_id,o.contract_detail_id,
+		o.material_id,o.main_quantity,o.secondary_quantity,o.purchase_head_id,o.purchase_detail_id,
+		o.main_price,o.secondary_price,o.amount,o.DELIVERY_DATE,o.REMARKS,o.already_main_quantity,
+		o.already_secondary_quantity,o.is_already,o.stock_main_quantity,o.stock_secondary_quantity,o.is_stock,
+		o.budget_plan_detail,o.centralized_department,o.account,
+		m.id mid,m.material_type,m.code,m.name mName ,m.conversion ,m.spec ,m.state , m.explain ,
+		d.dic_name unit,
+		e.dic_name unit_help,
+		cd.already_quantity,cd.quantity,
+		sc.company_name department_name,ba.name account_name		
+		from B_ORDER_DETAIL o
+		inner join BASE_MATERIAL m on  m.id = o.material_id 		
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		left join sys_dictionary e on  m.unit_help = e.dic_code 
+		Left join b_purchase_contract_detail cd on o.contract_detail_id = cd.id 
+		Left join B_BUDGET_ACCOUNT ba on ba.id = o.account 
+		Left join sys_company sc on sc.company_id = o.centralized_department
+		
+		where 1=1 and o.order_frame = #{order_frame} 
+		order by order_row_no
+	</select>
+	<!-- 根据id获取 -->  
+	<select id="selectByPk" parameterType="String" resultMap="orderDetailMap">
+	SELECT o.id,o.order_row_no,o.order_frame,o.frame_detail_id,o.contract_detail_id,
+		o.material_id,o.main_quantity,o.secondary_quantity,o.purchase_head_id,o.purchase_detail_id,
+		o.main_price,o.secondary_price,o.amount,o.DELIVERY_DATE,o.REMARKS,o.already_main_quantity,
+		o.already_secondary_quantity,o.is_already,o.stock_main_quantity,o.stock_secondary_quantity,o.is_stock,
+		o.budget_plan_detail,o.centralized_department,o.account	
+	FROM B_ORDER_DETAIL o
+	WHERE  o.id= #{id}	
+		order by order_row_no
+	</select>
+	
+	<!-- 插入明细数据 -->
+	<insert id="insert" parameterType="OrderDetail">
+	INSERT INTO B_ORDER_DETAIL
+	(id,order_row_no,order_frame,frame_detail_id,contract_detail_id,
+		material_id,main_quantity,secondary_quantity,purchase_head_id,purchase_detail_id,
+		main_price,secondary_price,amount,DELIVERY_DATE,REMARKS,is_already,is_stock,
+		budget_plan_detail,centralized_department,account) 
+	VALUES
+	(#{id},#{order_row_no},#{order_frame},#{frame_detail_id},#{contract_detail_id},
+	#{material_id},#{main_quantity},#{secondary_quantity},#{purchase_head_id},#{purchase_detail_id},
+	#{main_price},#{secondary_price},#{amount},#{delivery_date},#{remarks},'Y','N',
+	#{budget_plan_detail},#{centralized_department},#{account})
+	</insert>
+	<!-- 根据主表id删除全部明细 -->
+	<delete id="delDet" parameterType="String">
+	 delete from B_ORDER_DETAIL where order_frame=#{order_id}
+	</delete>
+	
+	<!-- 更新已入库数量、状态 -->
+	<update id="updateAlready" parameterType="OrderDetail">
+		update B_ORDER_DETAIL set 
+		already_main_quantity = #{already_main_quantity},
+		<if test="null != already_secondary_quantity"> 
+		already_secondary_quantity = #{already_secondary_quantity},
+		</if>
+		is_already = #{is_already}
+		where ID=#{id}
+	</update>
+	
+	<!-- 更新已入库数量、状态 -->
+	<update id="updateStock" parameterType="OrderDetail">
+		update B_ORDER_DETAIL set 
+		stock_main_quantity = #{stock_main_quantity},
+		<if test="null != stock_secondary_quantity"> 
+		stock_secondary_quantity = #{stock_secondary_quantity},
+		</if>
+		is_stock = #{is_stock}
+		where ID=#{id}
+	</update>
+	
+	
+	<!-- 入库去重复-->
+	<select id="selectByIdNotIn" parameterType="map" resultMap="orderDetailMap">
+		select o.id,o.order_row_no,o.order_frame,o.frame_detail_id,o.contract_detail_id,
+		o.material_id,o.main_quantity,o.secondary_quantity,o.purchase_head_id,o.purchase_detail_id,
+		o.main_price,o.secondary_price,o.amount,o.DELIVERY_DATE,o.REMARKS,o.already_main_quantity,
+		o.already_secondary_quantity,o.is_already,		
+		o.budget_plan_detail,o.centralized_department,o.account,
+		m.id mid,m.material_type,m.code,m.name mName ,m.conversion ,m.spec ,m.state , m.explain ,
+		d.dic_name unit,
+		e.dic_name unit_help,
+		sc.company_name department_name,ba.name account_name		
+		
+		from B_ORDER_DETAIL o
+		inner join BASE_MATERIAL m on  m.id = o.material_id 		
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		left join sys_dictionary e on  m.unit_help = e.dic_code
+		
+		Left join B_BUDGET_ACCOUNT ba on ba.id = o.account 
+		Left join sys_company sc on sc.company_id = o.centralized_department 
+		where o.order_frame = #{order_id}  and o.is_already =  'Y' 
+		<if test="null != order_detail"> 
+			and o.id not in
+			<foreach collection="order_detail" index="index" item="item" open="(" separator="," close=")">
+	   			#{item}
+	   		</foreach>
+	   	</if>
+	   	order by order_row_no
+	</select>
+	<!-- 根据主表id查询明细和物资信息 ，并关联查出合同明细中的合同数量和已生成订单数量-->
+	<select id="selectQuantityByOId" parameterType="string" resultMap="orderDetailMap">
+		select od.main_quantity,cd.already_quantity,cd.quantity ,
+		m.id mid,m.material_type,m.code,m.name mName ,m.conversion ,m.spec ,m.state , m.explain 
+		from b_order_detail od 		
+		inner join BASE_MATERIAL m on  m.id = od.material_id 
+		inner join b_purchase_contract_detail cd 
+		on od.contract_detail_id = cd.id 
+		where od.order_frame =#{id}
+	</select>
+	<!-- 出库去重复-->
+	<select id="selectByIdNotOut" parameterType="map" resultMap="orderDetailMap">
+		select o.id,o.order_row_no,o.order_frame,o.frame_detail_id,o.contract_detail_id,
+		o.material_id,o.main_quantity,o.secondary_quantity,o.purchase_head_id,o.purchase_detail_id,
+		o.main_price,o.secondary_price,o.amount,o.DELIVERY_DATE,o.REMARKS,o.already_main_quantity,
+		o.already_secondary_quantity,o.is_already,o.stock_main_quantity,o.stock_secondary_quantity,o.is_stock,		
+		o.budget_plan_detail,o.centralized_department,o.account,
+		m.id mid,m.material_type,m.code,m.name mName ,m.conversion ,m.spec ,m.state , m.explain ,
+		d.dic_name unit,
+		e.dic_name unit_help,
+		sc.company_name department_name,ba.name account_name		
+		from B_ORDER_DETAIL o
+		inner join BASE_MATERIAL m on  m.id = o.material_id 		
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		left join sys_dictionary e on  m.unit_help = e.dic_code
+		Left join B_BUDGET_ACCOUNT ba on ba.id = o.account 
+		Left join sys_company sc on sc.company_id = o.centralized_department 
+		where o.order_frame = #{order_id}  and o.is_stock =  'Y' 
+		<if test="null != order_detail"> 
+			and o.id not in
+			<foreach collection="order_detail" index="index" item="item" open="(" separator="," close=")">
+	   			#{item}
+	   		</foreach>
+	   	</if>
+	   	order by order_row_no
+	</select>
+	
+</mapper>

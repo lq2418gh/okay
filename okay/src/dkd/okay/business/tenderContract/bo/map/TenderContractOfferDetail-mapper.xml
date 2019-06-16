@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TenderContractOfferDetail">
+
+	 <resultMap type="TenderContractOfferDetail" id="tenderContractOfferDetailMap">
+		<id column="id" property="id" />
+		<result column="tender_detail" property="tender_detail" />
+		<result column="contract_offer_head" property="contract_offer_head" />
+		<result column="material" property="material" />
+		<result column="main_Price" property="main_Price" />
+		<result column="secondary_Price" property="secondary_Price" />
+	</resultMap>
+	<!-- 插入明细表 -->
+	<insert id="insert" parameterType="TenderContractOfferDetail">
+		INSERT INTO b_tender_contract_offer_detail
+		(id,tender_detail,contract_Offer_head,material,main_Price,secondary_Price) 
+		VALUES
+		(#{id},#{tender_detail},#{contract_offer_head},#{material},#{main_Price},#{secondary_Price})
+	</insert>
+	
+	<!-- 上传报价时删除第一次上传的报价信息  -->
+	<delete id="deleteTenderContractOfferHeadID" parameterType="String">
+		delete from b_tender_contract_offer_detail 
+		where contract_offer_head=#{contract_offer_head}
+	</delete>
+</mapper>

@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="UserInfo">
+	<resultMap type="UserInfo" id="userInfoMap">
+		<id column="userinfo_id" property="userInfoId"/>
+		<result column="realName" property="realName"/>
+		<result column="workNo" property="workNo"/>
+		<result column="specialty" property="specialty"/>
+		<result column="position" property="position"/>
+		<result column="sex" property="sex"/>
+		<result column="email" property="email"/>
+		<result column="workEmail" property="workEmail"/>
+		<result column="phone" property="phone"/>
+		<result column="workPhone" property="workPhone"/>
+		<result column="tel" property="tel"/>
+		<result column="address" property="address"/>
+		<result column="sign_password" property="sign_password"/>
+		<result column="createTime" property="createTime"/>
+		<result column="lastLoginTime" property="lastLoginTime"/>
+		<result column="lastLoginIP" property="lastLoginIP"/>
+		<result column="HaiyangUserCode" property="HaiyangUserCode"/>
+		<result column="GufenUserCode" property="GufenUserCode"/>
+		<association column="user_id" property="user"  javaType="User">  
+            <id column="user_id" property="userId"/>
+            <result column="userName" property="userName"/>  
+            <result column="isUse" property="isUse"/>  
+            <result column="appAdmin" property="appAdmin"/>  
+            <result column="sysAdmin" property="sysAdmin"/>    
+        </association>
+        <association column="company_id" property="company"  javaType="Company">  
+            <id column="company_id" property="companyId"/>
+            <result column="company_name" property="companyName"/> 
+        </association>
+	</resultMap>
+	<!-- 分页查询用户信息 --> 
+	<select id="selectUserInfoByCompanyId" resultMap="userInfoMap" parameterType="map">
+		select * from (
+			select ui.*,u.userName,u.isUse,u.password,ROW_NUMBER() OVER (order by ui.position,u.userName)  r from sys_userinfo  ui
+			inner join sys_user  u on u.user_id = ui.user_id 
+			where u.isDel = 0 and u.sysadmin = 0 and u.appadmin = 0 	
+			<if test="roleName != null  and roleName != ''" >
+           and ui.userinfo_id in (select distinct ui.userinfo_id from sys_userinfo  ui
+			inner join sys_user  u on u.user_id = ui.user_id 
+			inner join sys_user_role  ur on ur.user_id=ui.user_id
+            inner join sys_role  r on r.role_id=ur.role_id
+			where 	 r.role_name  like '%' || #{roleName} || '%') 		
+			</if>	
+			<if test="companyId != null "> 
+			and ui.company_id in 
+			(select c.company_id from sys_company  c  where c.isdel = 0 and (c.parentId =  #{companyId}  or c.company_id =  #{companyId}  ))
+			</if>
+			<if test="workNo != null  and workNo != ''" > and ui.workNo  like '%' || #{workNo} || '%'</if>
+			<if test="realName != null and realName != ''"> and ui.realName  like '%' || #{realName} || '%'</if>
+			<if test="position != null and position != ''"> and ui.position  like '%' || #{position} || '%'</if>
+		) s where s.r between #{page.startPos} and ((#{page.pageSize}+#{page.startPos})-1)
+	</select>
+	
+	<!-- 导出用户信息 --> 
+	<select id="exportUserInfoByCompanyId" resultMap="userInfoMap" parameterType="map">
+		select * from (
+			select ui.*,u.userName,u.isUse,u.password,ROW_NUMBER() OVER (order by ui.position,u.userName)  r from sys_userinfo  ui
+			inner join sys_user  u on u.user_id = ui.user_id 
+			where u.isDel = 0 and u.sysadmin = 0 and u.appadmin = 0 	
+			<if test="roleName != null  and roleName != ''" >
+           and ui.userinfo_id in (select distinct ui.userinfo_id from sys_userinfo  ui
+			inner join sys_user  u on u.user_id = ui.user_id 
+			inner join sys_user_role  ur on ur.user_id=ui.user_id
+            inner join sys_role  r on r.role_id=ur.role_id
+			where 	 r.role_name  like '%' || #{roleName} || '%') 		
+			</if>	
+			<if test="companyId != null "> 
+			and ui.company_id in 
+			(select c.company_id from sys_company  c  where c.isdel = 0 and (c.parentId =  #{companyId}  or c.company_id =  #{companyId}  ))
+			</if>
+			<if test="workNo != null  and workNo != ''" > and ui.workNo  like '%' || #{workNo} || '%'</if>
+			<if test="realName != null and realName != ''"> and ui.realName  like '%' || #{realName} || '%'</if>
+			<if test="position != null and position != ''"> and ui.position  like '%' || #{position} || '%'</if>
+		) s left join
+		(
+			select company_id,company_name from sys_company 
+		) t on t.company_id = s.company_id
+	</select>
+	
+	
+	<!-- 计算数据量 --> 
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from sys_userinfo  ui 
+		inner join sys_user  u on u.user_id = ui.user_id 
+		where u.isDel = 0 and u.sysadmin = 0 and u.appadmin = 0 	
+			<if test="companyId != null "> 
+			and ui.company_id in 
+			(select c.company_id from sys_company  c  where c.isdel = 0 and  (c.parentId =  #{companyId}  or c.company_id =  #{companyId}  ) )
+			</if>	
+			<if test="workNo != null  and workNo != ''" > and ui.workNo  like '%' || #{workNo} || '%'</if>
+			<if test="realName != null and realName != ''"> and ui.realName  like '%' || #{realName} || '%'</if>
+			<if test="position != null and position != ''"> and ui.position  like '%' || #{position} || '%'</if>											
+	</select>
+	<select id="selectUserInfoByCompanyIdByRoleCount" resultType="int" parameterType="map">
+		select count(*) from sys_userinfo  ui 
+		inner join sys_user  u on u.user_id = ui.user_id 
+		where u.isDel = 0 and u.sysadmin = 0 and u.appadmin = 0 	
+		<if test="roleName != null  and roleName != ''" >
+		    and ui.userinfo_id in (select distinct ui.userinfo_id from sys_userinfo  ui
+			inner join sys_user  u on u.user_id = ui.user_id 
+			inner join sys_user_role  ur on ur.user_id=ui.user_id
+            inner join sys_role  r on r.role_id=ur.role_id
+			where  r.role_name  like '%' || #{roleName} || '%') 			
+			</if>
+			<if test="companyId != null "> 
+			and ui.company_id in 
+			(select c.company_id from sys_company  c  where c.isdel = 0 and  (c.parentId =  #{companyId}  or c.company_id =  #{companyId}  ) )
+			</if>	
+			<if test="workNo != null  and workNo != ''" > and ui.workNo  like '%' || #{workNo} || '%'</if>
+			<if test="realName != null and realName != ''"> and ui.realName  like '%' || #{realName} || '%'</if>
+			<if test="position != null and position != ''"> and ui.position  like '%' || #{position} || '%'</if>									
+	</select>
+	<select id="countReal" resultType="int" parameterType="map">
+		select count(*) from sys_userinfo where realname = #{realname} 												
+	</select>
+	
+	
+	
+	<!-- 新增用户信息 -->  
+	<insert id="insert" parameterType="UserInfo">
+		insert into sys_userinfo (
+			userinfo_id,user_id,realname,workNo,specialty,position,sex,address,
+			workphone,phone,workemail,email,tel,createTime,sign_password,company_id,
+			HaiyangUserCode,GufenUserCode
+		) values (
+			#{userInfoId},#{user.userId},#{realName},
+			#{workNo,jdbcType=VARCHAR},
+			#{specialty,jdbcType=VARCHAR},
+			#{position},#{sex},
+			#{address,jdbcType=VARCHAR},
+			#{workPhone},#{phone,jdbcType=VARCHAR},#{workEmail},
+			#{email,jdbcType=VARCHAR},#{tel,jdbcType=VARCHAR},#{createTime},
+			#{sign_password,jdbcType=VARCHAR},
+			#{company.companyId},
+			#{HaiyangUserCode,jdbcType=VARCHAR},#{GufenUserCode,jdbcType=VARCHAR}
+		)
+	</insert>
+	<!-- 新增高级用户信息 -->  
+	<insert id="insertSeniorUserInfo" parameterType="UserInfo">
+		insert into sys_userinfo (	userinfo_id,user_id,realname,createTime,company_id
+		) values ( #{userInfoId},#{user.userId},#{realName},#{createTime},#{company.companyId}	);
+	</insert>
+	<!-- 根据id获取用户信息 -->  
+	<select id="selectByPk" parameterType="string" resultMap="userInfoMap">
+		select ui.*,u.password,u.username,u.isuse,u.appAdmin,u.sysAdmin from sys_userinfo  ui 
+		inner join sys_user  u on u.userinfo_id = ui.userinfo_id
+		where ui.userinfo_id = #{userInfoId}
+	</select>
+	<select id="selectByuserId" parameterType="string" resultMap="userInfoMap">
+		select ui.*,u.password,u.username,u.isuse,u.appAdmin,u.sysAdmin 
+		from sys_userinfo  ui 
+		inner join sys_user  u on u.userinfo_id = ui.userinfo_id
+		where ui.user_id = #{userInfoId}
+	</select>
+	<!-- 修改用户信息 --> 
+	<update id="update" parameterType="UserInfo">
+		update sys_userinfo 
+		<set>
+			<if test="realName!= null">realName = #{realName}, </if>
+			<if test="workNo!= null">workNo = #{workNo}, </if>
+			<if test="specialty!= null">specialty = #{specialty}, </if>
+			<if test="position!= null">position = #{position}, </if>
+			<if test="sex!= null and sex != ''">sex = #{sex}, </if>
+			<if test="address!= null">address = #{address}, </if>
+			<if test="workPhone!= null">workphone = #{workPhone}, </if>
+			<if test="phone!= null">phone = #{phone}, </if>
+			<if test="workEmail!= null">workemail = #{workEmail}, </if>
+			<if test="email!= null">email = #{email}, </if>
+			<if test="tel!= null">tel = #{tel}, </if>
+			<if test="createTime!= null">createTime = #{createTime}, </if>
+			<if test="lastLoginTime!= null">lastLoginTime = #{lastLoginTime}, </if>
+			<if test="lastLoginIP!= null">lastLoginIP = #{lastLoginIP}, </if>
+			<if test="sign_password!= null">sign_password = #{sign_password}, </if>
+			<if test="HaiyangUserCode!= null">HaiyangUserCode = #{HaiyangUserCode},</if>
+			<if test="GufenUserCode!= null">GufenUserCode = #{GufenUserCode}</if>
+		</set> 
+		where userinfo_id = #{userInfoId}
+	</update>
+	<!-- 根据id获取用户信息 -->  
+	<select id="selectUserById" parameterType="string" resultMap="userInfoMap">
+		select ui.*,u.username,u.isuse 
+		from sys_userinfo  ui 
+		inner join sys_user  u on u.userinfo_id = ui.userinfo_id
+		where u.user_id = #{userId}
+	</select>
+	<!-- 按照职位获取用户信息 -->  
+	<select id="selectByPosition" resultMap="userInfoMap" parameterType="Map">
+		select ui.realName,u.user_id,ui.workEmail 
+		from sys_userinfo  ui 
+		inner join sys_user   u on u.userinfo_id = ui.userinfo_id  
+		where u.isdel = '0' and u.isuse = '1' and u.sysAdmin = '0' and u.username not like '%test%'
+		<if test="position != null ">and ui.position in  
+		<foreach collection="position" index="index" item="item" open="("    separator="," close=")">
+   			#{item}
+  		</foreach></if> order by ui.position
+	</select>
+	<select id="selectByRole" resultMap="userInfoMap" parameterType="Map">
+		select ui.realName,u.user_id,ui.workEmail 
+		from sys_userinfo  ui 
+		inner join sys_user   u on u.userinfo_id = ui.userinfo_id  
+		where ui.user_id IN ( SELECT DISTINCT user_id FROM sys_user_role
+		where role_id IN (SELECT role_id from sys_role where role_name IN 
+		<foreach collection="role" index="index" item="item" open="("    separator="," close=")">
+   			#{item}
+  		</foreach>
+		))
+		and u.isdel = '0' and u.isuse = '1' and u.username not like '%test%'
+	</select>
+	<!-- 按照用户名称获取用户信息 -->  
+	<select id="selectByName" resultMap="userInfoMap" parameterType="string">
+		select ui.*,u.password,u.username,u.isuse,u.appAdmin,u.sysAdmin 
+		from sys_userinfo  ui 
+		inner join sys_user  u on u.userinfo_id = ui.userinfo_id
+		where ui.realname = #{realname}
+	</select>
+	<!-- 物料领用模块修改插入二级审批方式（部门经理（劳保）） -->
+	<select id="selectByRoleAndCompany" resultMap="userInfoMap" parameterType="Map">
+		select ui.realName,u.user_id,ui.workEmail 
+		from sys_userinfo  ui 
+		inner join sys_user   u on u.userinfo_id = ui.userinfo_id  
+		left join sys_company sc on sc.company_id=ui.company_id
+		where ui.user_id IN ( SELECT DISTINCT user_id FROM sys_user_role
+		where role_id IN (SELECT role_id from sys_role where role_name ='部门经理（劳保）' 
+		))
+		and sc.company_name=#{department}
+		and u.isdel = '0' and u.isuse = '1' and u.username not like '%test%'
+	</select>
+</mapper>

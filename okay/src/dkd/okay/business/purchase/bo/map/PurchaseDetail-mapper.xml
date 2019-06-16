@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PurchaseDetail">
+
+	<resultMap type="PurchaseDetail" id="purchaseDetailMap">
+		<id column="did" property="id" />
+		<result column="purchaseDetail_row_no" property="purchaseDetail_row_no" />
+		<result column="PURCHASE_HEAD_ID" property="purchase_head_id" />
+		<result column="MATERIEL_ID" property="materiel_id" />
+		<result column="DEMAND_QUANTITY" property="demand_quantity" />
+		<result column="PURPOSE" property="purpose" />
+		<result column="BUDGET_ACCOUNT" property="budget_account" />
+		<result column="BUDGET_AMOUNT" property="budget_amount" />
+		<result column="DEMAND_DATE" property="demand_date" />
+		 <association property="budgetAccount" javaType="BudgetAccount" >
+			<id column="aid" property="budgetAccountId" />
+			<result column="aName" property="name" />
+		</association>
+		
+		<association property="material" javaType="Material">   
+           	<id column="mid" property="id" />
+			<result column="material_type" property="material_type" />
+			<result column="code" property="code" />
+			<result column="mName" property="name" />
+			<result column="unit" property="unit" />
+			<result column="unit_help" property="unit_help" />
+			<result column="conversion" property="conversion" />
+			<result column="spec" property="spec" />
+			<result column="state" property="state" />
+			<result column="explain" property="explain" />
+        </association>
+       
+	</resultMap>
+	
+	<!-- 根据采购计划主表id查询采购计划明细和物资信息 -->
+	<select id="selectDetailByPId" parameterType="String" resultMap="purchaseDetailMap">
+		select d.ID did,d.purchaseDetail_row_no,d.PURCHASE_HEAD_ID ,d.MATERIEL_ID ,d.DEMAND_QUANTITY,d.PURPOSE,d.BUDGET_ACCOUNT,d.BUDGET_AMOUNT,d.DEMAND_DATE,
+		m.id mid,m.material_type,m.code,m.name mName ,m.unit , m.unit_help ,m.conversion ,m.spec ,m.state , m.explain,
+		a.id aid , a.name aName
+		from B_PURCHASEPLAN_DETAIL d
+		inner join BASE_MATERIAL m on  m.id = d.MATERIEL_ID
+		inner join B_BUDGET_ACCOUNT a on  a.id = d.BUDGET_ACCOUNT
+		<where>
+			d.PURCHASE_HEAD_ID = #{plan_id}
+		</where>
+	</select>
+	
+	<!-- 插入明细数据 -->
+	<insert id="insert" parameterType="PurchaseDetail">
+	INSERT INTO B_PURCHASEPLAN_DETAIL
+	(id,purchaseDetail_row_no,purchase_head_id,materiel_id,demand_quantity,purpose,budget_account,budget_amount,demand_date) 
+	VALUES
+	(#{id},#{purchaseDetail_row_no},#{purchase_head_id},#{materiel_id},#{demand_quantity},#{purpose},#{budget_account},#{budget_amount},#{demand_date})
+	</insert>
+	
+	<delete id="delDet" parameterType="String">
+	 delete from B_PURCHASEPLAN_DETAIL where PURCHASE_HEAD_ID=#{id}
+	</delete>
+	
+	<insert id="addPD" parameterType="java.util.List" useGeneratedKeys="false">
+	
+		insert into B_PURCHASEPLAN_DETAIL
+        	(id,purchaseDetail_row_no,purchase_head_id,materiel_id,demand_quantity,purpose,budget_account,budget_amount,demand_date)
+        	select a.* from (
+        <foreach collection="list" item="item" index="index" separator="union all">  
+           select 
+            #{item.id} id,
+            #{item.purchaseDetail_row_no} purchaseDetail_row_no,
+            #{item.purchase_head_id} purchase_head_id,
+            #{item.materiel_id} materiel_id,
+            #{item.demand_quantity} demand_quantity,
+            #{item.purpose} purpose,
+            #{item.budget_account} budget_account,
+            #{item.budget_amount} budget_amount,
+            #{item.demand_date} demand_date
+           from dual
+        </foreach>  
+        ) a
+	</insert>
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="InvoiceDetail">
+	<resultMap type="InvoiceDetail" id="invoiceDetailMap">
+	 	<id column="id" property="id" />
+		<result column="invoice_id" property="invoiceId" />
+		<result column="material" property="material" />
+		<result column="price" property="price" />
+		<result column="amount" property="amount" />
+		<result column="sum" property="sum" />
+		<result column="name" property="name" />
+	    <result column="unit" property="unit" />
+	    <result column="spec" property="spec" />
+	</resultMap>
+	<!-- 删除发票明细信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_invoice_detail 
+		where invoice_id = #{invoiceId}
+	</delete>
+	<!-- 新增发票明细信息 -->
+	<insert id="insert" parameterType="InvoiceDetail" >
+		insert into b_invoice_detail
+		(id,invoice_id,material,price,amount,sum)
+		 VALUES
+		(#{id},#{invoiceId},#{material},#{price},#{amount},#{sum})
+	</insert>
+	<!-- 根据ID查询发票明细细信息 -->
+	<select id="selectById" parameterType="String"  resultMap="invoiceDetailMap">
+		select 	b.*,m.name,d.dic_name unit,m.spec
+		from b_invoice_detail b    
+		inner join base_material m on b.material=m.id
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		where b.invoice_id = #{invoiceId}
+	</select>
+</mapper>

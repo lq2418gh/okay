@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PurchaseContractDetail">
+	<resultMap type="PurchaseContractDetail" id="purchaseContractDetailMap">
+	<id column="id" property="id" />
+	<result column="purchase_contract_head" property="purchaseContractHead" />
+	<result column="tender_contract_detail" property="tenderContractDetail" />
+	<result column="material" property="material" />
+	<result column="main_price" property="mainPrice" />
+	<result column="secondary_price" property="secondaryPrice" />
+	<result column="quantity" property="quantity" />
+	<result column="total_price" property="totalPrice" />
+	<result column="purchase_head_id" property="purchase_head_id" />
+	<result column="purchase_detail_id" property="purchase_detail_id" />
+	<result column="budget_plan_detail" property="budget_plan_detail" />
+	<result column="centralized_department" property="centralized_department" />
+	<result column="account" property="account" />
+	<result column="name" property="name" />
+	<result column="unit" property="unit" />
+	<result column="conversion" property="conversion" />
+	<result column="spec" property="spec" />
+	
+	
+	<result column="already_quantity" property="already_quantity" />	
+	<result column="is_already" property="is_already" />
+	
+	
+	<result column="department_name" property="department_name" />
+	<result column="account_name" property="account_name" />
+	</resultMap>
+	
+	<!-- 删除计划预算明细信息 -->
+	<delete id="delete" parameterType="String">
+		delete from b_purchase_contract_detail 
+		where purchase_contract_head = #{purchaseContractHead}
+	</delete>
+	<!-- 新增计划预算明细信息 -->
+	<insert id="insert" parameterType="PurchaseContractDetail" >
+		insert into b_purchase_contract_detail
+		(id,purchase_contract_head,tender_contract_detail,material,main_price,secondary_price,quantity,
+		total_price,purchase_head_id,purchase_detail_id,is_already,budget_plan_detail,centralized_department,account)
+		 VALUES
+		(#{id},#{purchaseContractHead},#{tenderContractDetail},#{material},#{mainPrice},#{secondaryPrice},#{quantity},
+		#{totalPrice},#{purchase_head_id},#{purchase_detail_id},'Y',#{budget_plan_detail},#{centralized_department},#{account})
+	</insert>
+	<!-- 根据ID查询计划预算明细信息 -->
+	<select id="selectDetailByCId" parameterType="String"  resultMap="purchaseContractDetailMap">
+		select 	b.*,m.name,d.dic_name unit,m.conversion,m.spec
+		from b_purchase_contract_detail b    
+		inner join base_material m on b.material=m.id
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		where b.purchase_contract_head = #{contract_id} 
+	</select>
+	<!-- 根据ID查询计划预算明细信息 -->
+	<select id="selectByIdNotIn" parameterType="map"  resultMap="purchaseContractDetailMap">
+		select 	b.*,m.name,d.dic_name unit,m.conversion,m.spec,
+		sc.company_name department_name,ba.name account_name		
+		from b_purchase_contract_detail b    
+		inner join base_material m on b.material=m.id
+		inner join sys_dictionary d on  m.unit = d.dic_code
+		
+		Left join B_BUDGET_ACCOUNT ba on ba.id = b.account 
+		Left join sys_company sc on sc.company_id = b.centralized_department
+		
+		where b.purchase_contract_head = #{contract_id} and is_already = 'Y'
+		<if test="null != details"> 
+			and b.id not in
+			<foreach collection="details" index="index" item="item" open="(" separator="," close=")">
+	   			#{item}
+	   		</foreach>
+	   	</if>
+	</select>
+	
+	<!-- 更新 -->
+	<update id="updateAlready" parameterType="PurchaseContractDetail">
+		update b_purchase_contract_detail set 
+		already_quantity = #{already_quantity},
+		is_already = #{is_already}
+		where ID=#{id}
+	</update>
+	
+	
+	<!-- 根据id获取 -->  
+	<select id="selectByPk" parameterType="string" resultMap="purchaseContractDetailMap">
+	SELECT c.* FROM b_purchase_contract_detail c
+	WHERE  c.id= #{id}
+	</select>
+	<!-- 根据ID查询计划预算明细信息 -->
+	<select id="selectById" parameterType="String"  resultMap="purchaseContractDetailMap">
+		select 	b.*
+		from b_purchase_contract_detail b    
+		where b.purchase_contract_head = #{id} 
+	</select>
+</mapper>

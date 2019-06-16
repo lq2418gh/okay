@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="MaterialPurchaseDetail">
+
+	<resultMap type="MaterialPurchaseDetail" id="MaterialPurchaseDetailMap">
+		<id column="id" property="id" />
+		<result column="purchase_head_id" property="purchase_head_id" />
+		<result column="purchase_row_no" property="purchase_row_no" />
+		<result column="material" property="material" />
+		<result column="main_Price" property="main_Price" />
+		<result column="main_Quantity" property="main_Quantity" />
+		<result column="secondary_Price" property="secondary_Price" />
+		<result column="secondary_Quantity" property="secondary_Quantity" />
+		<result column="amount" property="amount" />
+		<result column="budget_plan_detail" property="budget_plan_detail" />
+		<result column="is_choice" property="is_choice" />
+		<result column="name" property="name" />
+		<result column="unit" property="unit" />
+		<result column="spec" property="spec" />
+		<result column="conversion" property="conversion" />
+		<result column="stock" property="stock" />
+		<result column="account" property="account" />
+		<result column="explain" property="explain" />
+		<result column="code" property="code" />
+		<result column="centralized_department" property="centralized_department" />
+		<result column="choiceState" property="choiceState" />
+		
+		
+		<result column="department_name" property="department_name" />
+		<result column="account_name" property="account_name" />
+		
+		<result column="main_Price_f" property="main_Price_f" />
+		<result column="secondary_Price_f" property="secondary_Price_f" />
+		
+		<result column="frame_detail_id" property="frame_detail_id" />
+	</resultMap>
+	
+	<!-- 根据主表id删除明细表 -->
+	<delete id="delete" parameterType="java.lang.String">
+	 delete from B_MATERIAL_PURCHASE_DETAIL where purchase_head_id = #{primaryKey}
+	</delete>
+	
+	<!-- 批量插入数据 -->
+	<insert id="bathInsertMaterialPurchaseDetail" parameterType="java.util.List" useGeneratedKeys="false">
+     INSERT ALL
+    <foreach item="item" index="index" collection="list">
+     INTO B_MATERIAL_PURCHASE_DETAIL
+     (
+        id,purchase_head_id,purchase_row_no,material,main_Quantity,main_Price,amount,
+		budget_plan_detail,is_choice,secondary_Quantity,secondary_Price,choiceState
+      ) VALUES
+      (
+         #{item.id},
+         #{item.purchase_head_id},
+         #{item.purchase_row_no},
+         #{item.material},
+         #{item.main_Quantity},
+         #{item.main_Price},
+         #{item.amount},
+         #{item.budget_plan_detail},
+         #{item.is_choice},
+         #{item.secondary_Quantity},
+         #{item.secondary_Price},
+         #{item.choiceState}
+      )
+     </foreach>
+      SELECT 1 FROM DUAL
+	</insert>
+	
+	<!-- 根据ID查询计划预算明细信息 -->
+	<select id="selectById" resultMap="MaterialPurchaseDetailMap" parameterType="map">
+	select b.*,m.name,d.dic_name unit,m.conversion,m.spec,m.explain,m.code,h.centralized_department,p.account,
+	sc.company_name department_name,ba.name account_name	
+	from B_MATERIAL_PURCHASE_DETAIL b
+	inner join base_material m on b.material=m.id
+	inner join sys_dictionary d on  m.unit = d.dic_code
+	inner join B_MATERIAL_PURCHASE_HEAD h on h.id=b.purchase_head_id
+	INNER JOIN  b_budget_plan_detail p on b.budget_plan_detail = p.id
+	Left join B_BUDGET_ACCOUNT ba on ba.id = p.account 
+	Left join sys_company sc on sc.company_id = h.centralized_department
+	<where>
+	 b.purchase_head_id = #{purchase_head_id} and b.choiceState=0 
+			<if test="pdids != null and pdids.length>0">
+			or b.id in
+				<foreach collection="pdids" index="index" item="ids" open="("  separator="," close=")">
+					#{ids}
+				</foreach>
+				and b.purchase_head_id = #{purchase_head_id}
+			</if>
+	</where>
+	</select>
+		
+	<update id="updChoiceState" parameterType="String">
+		update B_MATERIAL_PURCHASE_DETAIL set choiceState=1 where id=#{purchase_detail_id}
+	</update>
+	
+	<update id="recoverChoiceState" parameterType="String">
+		update B_MATERIAL_PURCHASE_DETAIL set choiceState=0 where id=#{purchase_detail_id}
+	</update>
+	
+	
+	<!-- 根据ID查询计划预算明细信息 周渤涛2017年10月18日加，采购订单选择框架协议单关联的物资审批表明细-->
+	<select id="selectByFrameId" resultMap="MaterialPurchaseDetailMap" parameterType="map">
+	
+	select b.id,b.purchase_head_id,b.purchase_row_no,b.material,b.main_Quantity,b.secondary_Quantity,b.amount,b.budget_plan_detail,b.is_choice,b.choiceState,
+	b.secondary_Price,b.main_Price,
+	bfd.secondary_Price secondary_Price_f,bfd.main_Price main_Price_f,
+	m.name,d.dic_name unit,m.conversion,m.spec,m.explain,m.code,h.centralized_department,p.account,
+	sc.company_name department_name,ba.name account_name	,bfd.id frame_detail_id 
+	from b_frame_detail bfd --框架明细
+	inner join B_MATERIAL_PURCHASE_DETAIL b on bfd.material = b.material 
+	inner join base_material m on b.material=m.id
+	inner join sys_dictionary d on  m.unit = d.dic_code
+	inner join B_MATERIAL_PURCHASE_HEAD h on h.id=b.purchase_head_id
+	INNER JOIN  b_budget_plan_detail p on b.budget_plan_detail = p.id
+	Left join B_BUDGET_ACCOUNT ba on ba.id = p.account 
+	Left join sys_company sc on sc.company_id = h.centralized_department
+	
+	where  ( bfd.frame_head = #{frame_head} and b.choiceState = 0 
+			and h.id in
+			<foreach collection="materialsPurchaseIds" index="index" item="materialsPurchaseId" open="(" separator="," close=")">
+	   			#{materialsPurchaseId}
+	   		</foreach>
+	   		<if test="null != details "> 
+		   		and b.id not in
+				<foreach collection="details" index="index" item="item" open="(" separator="," close=")">
+		   			#{item}
+		   		</foreach>
+	   		</if>
+			)
+			<if test="null != order_frame and '' != order_frame">
+				or (bfd.frame_head = #{frame_head} 
+    				and h.id in (select bod.PURCHASE_head_ID from b_order_detail bod 
+      				where bod.ORDER_FRAME = #{order_frame}
+      				<if test="null != details "> 
+      				and bod.PURCHASE_DETAIL_ID not in 
+      				<foreach collection="details" index="index" item="item" open="(" separator="," close=")">
+	   				#{item}
+	   				</foreach>
+	   				</if>
+      				))
+			</if>
+	order by m.name 
+	</select>
+
+</mapper>

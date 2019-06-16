@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Role">
+	<resultMap type="Role" id="roleMap">
+		<id column="role_id" property="roleId"/>
+		<result column="role_name" property="roleName"/>
+		<result column="remarks" property="remarks"/>
+		<result column="isdel" property="isDel"/>
+	</resultMap>
+	<resultMap type="VauthUser" id="authMap">
+		<result column="auth_id" property="authId"/>
+		<result column="auth_name" property="authName"/>
+		<result column="user_id" property="userId"/>
+		<result column="parentid" property="parentId"/>
+		<result column="auth_code" property="authCode"/>
+	</resultMap>
+	<!-- 常量 -->
+	<sql id="all">role_id,role_name,remarks</sql>
+	<!-- 查询全部的权限 -->
+	<select id="selectAll" resultMap="roleMap">
+		select <include refid="all"/> from sys_role  
+		
+		<where>
+			isdel='0'
+			<if test="roleName!=null">
+				and role_name  LIKE '%'||#{roleName}||'%'
+			</if>	
+		</where>
+	</select>
+	<select id="selectByName" resultMap="roleMap" parameterType="string">
+		select <include refid="all"/> from sys_role where isdel='0'	and role_name=#{roleName}
+	</select>
+	<select id="selectAllByPage" resultMap="roleMap" parameterType="map">
+		select * from (select role_id,role_name,remarks,ROW_NUMBER() OVER (order by sys_role.role_id) as r from sys_role  
+		<where>
+			isdel='0'
+			<if test="roleQuery.roleName!=null">
+				and role_name  LIKE '%'||#{roleQuery.roleName}||'%'
+			</if>
+		</where>
+		)  role where role.r between #{page.startPos} and ((#{page.pageSize}+#{page.startPos})-1)   
+	</select>
+	<select id="selectByPk" resultMap="roleMap" >
+		select <include refid="all"/> from sys_role where isdel='0' and  role_id = #{roleId}
+	</select>
+	<insert id="insertRoleEntity" parameterType="dkd.okay.system.bo.Role">
+		insert into sys_role (role_id,role_name,remarks,isdel) values(#{roleId},#{roleName},#{remarks},#{isDel})
+	
+	</insert>
+	<update id="updateRoleEntity" parameterType="dkd.okay.system.bo.Role">
+		update sys_role set role_name=#{roleName},remarks=#{remarks},isdel=#{isDel} where role_id=#{roleId}
+	</update>
+	<select id="loadAuthTreeByCurrentUser" resultMap="authMap">
+		select * from sys_authority 
+	</select>
+	<select id="loadAuthTreeByRole"  resultMap="authMap">
+		select distinct v_authUser.* from sys_authority  v_authUser
+			inner join sys_role_authority 
+			roleAuth on v_authUser.auth_id = roleAuth.auth_id
+		 where  role_id = #{roleId} 
+	</select>
+	<select id="countParam"  resultType="int" parameterType="string">
+		select count(*) from sys_user_role where role_id=#{roleId}
+	</select>
+		<select id="countRoleName"  resultType="int" parameterType="map">
+		select count(*) from sys_role where role_name=#{roleName} 
+		<if test="roleId != null and roleId != ''">
+			and role_id != #{roleId}
+		</if>
+	</select>
+</mapper>

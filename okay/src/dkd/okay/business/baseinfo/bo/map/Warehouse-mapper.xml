@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Warehouse">
+  <resultMap type="Warehouse" id="warehouseMap">
+		<id column="warehouse_id" property="warehouseId" />
+		<result column="warehouse_code" property="warehouseCode" />
+		<result column="warehouse_name" property="warehouseName" />
+		<result column="province" property="province" />
+		<result column="place" property="place" />
+		<result column="area" property="area" />
+		<result column="warehouse_owner" property="warehouseOwner" />
+		<result column="state" property="state" />
+		<result column="contacts" property="contacts" />
+		<result column="contact_number" property="contactNumber" />
+		<result column="remark" property="remark" />
+		<result column="isdel" property="isDel"/>
+	</resultMap>
+	<sql id="all"> 
+		w.warehouse_id,w.warehouse_code,w.warehouse_name,w.province,w.place,w.area,w.warehouse_owner,w.state,w.contacts,w.contact_number,w.remark
+	</sql>
+	<!-- 查询全部仓库信息 -->
+	<select id="selectAll" resultMap="warehouseMap" >
+		select <include refid="all"/> from base_warehouse w 
+		where w.isdel = 0  and  w.state = '使用' order by w.warehouse_code asc 
+	</select>
+	<!-- 根据上级ID分页查询仓库信息 -->
+	<select id="selectByCondition" resultMap="warehouseMap" parameterType="map">
+	select * from (
+		select w.*,ROW_NUMBER() OVER (order by warehouse_code ) r 
+		from base_warehouse  w  where w.isdel = 0
+		<if test="warehouse.warehouseCode != null and warehouse.warehouseCode != ''"> and w.warehouse_code like '%' || #{warehouse.warehouseCode} || '%' </if> 
+		<if test="warehouse.warehouseName != null and warehouse.warehouseName != ''"> and w.warehouse_name like '%' || #{warehouse.warehouseName} || '%' </if>
+		<if test="warehouse.state != null and warehouse.state != ''"> and w.state = #{warehouse.state}</if>
+		)s
+		<if test="page!= null">
+			where s.r
+			between #{page.startPos} and
+			(#{page.pageSize}+#{page.startPos}-1)
+		</if>
+		order by warehouse_code asc 
+	</select>
+	<!-- 根据上级ID查询仓库信息数量 -->
+	<select id="countParam" resultType="int" parameterType="map">
+		select count(*) from base_warehouse w where w.isdel = 0 
+		<if test="warehouse.warehouseCode != null and warehouse.warehouseCode != ''"> and w.warehouse_code like '%' || #{warehouse.warehouseCode} || '%' </if> 
+		<if test="warehouse.warehouseName != null and warehouse.warehouseName != ''"> and w.warehouse_name like '%' || #{warehouse.warehouseName} || '%' </if>
+		<if test="warehouse.state != null and warehouse.state != ''"> and w.state = #{warehouse.state}</if>
+	</select>
+	<!-- 根据ID查询仓库信息 -->
+	<select id="selectByPk" parameterType="String" resultMap="warehouseMap">
+		select 	<include refid="all" />  
+		from base_warehouse  w   
+		where w.warehouse_id = #{warehouseId}
+	</select>
+	<!-- 新增仓库信息 -->
+	<insert id="insert" parameterType="Warehouse" >
+		insert into base_warehouse 
+		(warehouse_id,warehouse_code,warehouse_name,state,province,area,warehouse_owner,contacts,contact_number,remark)
+		 VALUES
+		(#{warehouseId},#{warehouseCode},#{warehouseName},#{state},#{province},#{area},
+		#{warehouseOwner},#{contacts},#{contactNumber},#{remark})
+	</insert>
+	<!-- 更新仓库信息 -->
+	<update id="update" parameterType="Warehouse">
+		update base_warehouse set 
+		warehouse_name = #{warehouseName}, 
+		province = #{province}, 
+		place = #{place}, 
+		area = #{area}, 
+		warehouse_owner=#{warehouseOwner},
+		state = #{state}, 
+		contacts = #{contacts}, 
+		contact_number = #{contactNumber}, 
+		remark = #{remark}
+		where warehouse_id = #{warehouseId}
+	</update>
+	<!-- 删除仓库信息 -->
+	<update id="delete" parameterType="String">
+		update base_warehouse set 
+		isdel=1
+		where warehouse_id = #{warehouseId}
+	</update>
+	<!-- 查询忽略状态的全部仓库信息 -->
+	<select id="SQLID_SELECT_ALL_INGORE_STATE" resultMap="warehouseMap" >
+		select <include refid="all"/> from base_warehouse  w 
+		where w.isdel = 0   order by w.warehouse_code asc 
+	</select>
+	<!-- 判断数据库中仓库编码是否存在  -->
+	<select id="selectWarehouseRepeat" resultType="int" parameterType="String" >
+		select count(*) from base_warehouse  w where  w.isdel = 0  and w.warehouse_code = #{warehouseCode} 
+	</select>
+	<!-- 判断数据库中仓库名称是否存在  -->
+	<select id="selectWarehouseNameRepeat" resultType="int" parameterType="map" >
+		select count(*) from base_warehouse  m where  m.isdel = 0  and m.warehouse_name = #{warehouseName}  
+		   <if test="warehouseId != null and warehouseId !='' ">and m.warehouse_id!=#{warehouseId}</if>
+	</select>
+</mapper>
